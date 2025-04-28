@@ -209,9 +209,8 @@ const PostJobPage: React.FC = () => {
               </div>
               <label className={styles.label} htmlFor="title">Project Title</label>
               <Field className={styles.input} id="title" name="title" type="text" placeholder="e.g. AI-Powered Tutoring App" />
-              <ErrorMessage name="title" component="div" className={styles.error} />
-              <label className={styles.label} htmlFor="description">Description</label>
-              <Field as="textarea" className={styles.input} id="description" name="description" rows={5} placeholder="Describe your project, goals, and what support you need..." style={{ resize: 'vertical' }} />
+              <label className={styles.label} htmlFor="description">Project Description</label>
+              <Field as="textarea" className={styles.input} id="description" name="description" rows={5} placeholder="Describe your project, goals, and what support you need..." />
               <ErrorMessage name="description" component="div" className={styles.error} />
               <label className={styles.label} htmlFor="amount">Amount Requested (KES)</label>
               <Field className={styles.input} id="amount" name="amount" type="number" min="1" placeholder="e.g. 100000" />

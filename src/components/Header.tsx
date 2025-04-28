@@ -12,7 +12,7 @@ const Header: React.FC = () => {
         </Link>
         <nav className={styles.nav}>
           <Link to="/dashboard" className={styles.navLink} aria-current={location.pathname === '/dashboard' ? 'page' : undefined}>Dashboard</Link>
-          <Link to="/post-job" className={styles.navLink} aria-current={location.pathname === '/post-job' ? 'page' : undefined}>Post Job</Link>
+          <Link to="/post-project" className={styles.navLink} aria-current={location.pathname === '/post-project' ? 'page' : undefined}>Post Project</Link>
           <Link to="/invest" className={styles.navLink} aria-current={location.pathname === '/invest' ? 'page' : undefined}>Invest</Link>
           <Link to="/profile" className={styles.navLink} aria-current={location.pathname === '/profile' ? 'page' : undefined}>Profile</Link>
         </nav>
