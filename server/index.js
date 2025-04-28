@@ -149,7 +149,7 @@ function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Signup or resend code
+// Signup or resend coe
 app.post('/api/auth/signup', async (req, res) => {
   const email = req.body.email.trim().toLowerCase();
   const password = req.body.password;
