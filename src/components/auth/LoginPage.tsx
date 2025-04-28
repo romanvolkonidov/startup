@@ -63,6 +63,9 @@ const LoginPage: React.FC = () => {
               >
                 {isSubmitting || loading ? 'Logging in...' : 'Log In'}
               </button>
+              <Link to="/forgot-password" style={{ display: 'block', marginTop: '1rem' }}>
+                Forgot Password?
+              </Link>
             </Form>
           )}
         </Formik>
