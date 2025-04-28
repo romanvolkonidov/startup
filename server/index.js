@@ -320,6 +320,20 @@ app.get('/api/users/:id', async (req, res) => {
   }
 });
 
+const UPLOADS_DIR = path.join(__dirname, '../uploads');
+app.use('/uploads', express.static(UPLOADS_DIR));
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const base = path.basename(file.originalname, ext);
+    cb(null, base + '-' + Date.now() + ext);
+  }
+});
+const upload = multer({ storage });
+
 // File upload endpoint for user profile picture
 app.post('/api/upload/profile-picture', authenticateToken, upload.single('profilePicture'), async (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
