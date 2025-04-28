@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import LoginPage from '../components/auth/LoginPage';
 import { AuthProvider } from '../context/AuthContext';
 import { NotificationProvider } from '../context/NotificationContext';
+import { Link } from 'react-router-dom';
 
 // Mock navigate
 jest.mock('react-router-dom', () => ({

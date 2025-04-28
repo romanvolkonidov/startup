@@ -7,6 +7,7 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -141,7 +142,9 @@ function authenticateToken(req, res, next) {
 userSchema.add({ 
   verified: { type: Boolean, default: false },
   verificationCode: String,
-  verificationCodeExpires: Date
+  verificationCodeExpires: Date,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date
 });
 
 // Helper to generate 6-digit code
@@ -354,6 +357,47 @@ app.delete('/api/upload/job-media', authenticateToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to delete file' });
   }
+});
+
+// Forgot password endpoint
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
+  if (!user) {
+    // For security, always respond with success
+    return res.json({ success: true, message: 'If this email exists, a reset link will be sent.' });
+  }
+  // Generate reset token and expiration
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const resetTokenExpires = new Date(Date.now() + 1000 * 60 * 15); // 15 minutes
+  user.resetPasswordToken = resetToken;
+  user.resetPasswordExpires = resetTokenExpires;
+  await user.save();
+  // Send reset email
+  const resetUrl = `${FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
+  await transporter.sendMail({
+    from: process.env.SMTP_USER || 'noreply@startupconnect.com',
+    to: normalizedEmail,
+    subject: 'Reset your password for StartUp Connect',
+    html: `<p>Hello,</p><p>You requested a password reset. Click <a href="${resetUrl}">here</a> to reset your password. This link is valid for 15 minutes.</p>`
+  });
+  res.json({ success: true, message: 'If this email exists, a reset link will be sent.' });
+});
+
+// Reset password endpoint
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, token, newPassword } = req.body;
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail, resetPasswordToken: token });
+  if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+    return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
+  }
+  user.password = newPassword;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+  await user.save();
+  res.json({ success: true, message: 'Password has been reset. You can now log in.' });
 });
 
 app.listen(PORT, () => {

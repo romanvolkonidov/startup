@@ -18,6 +18,8 @@ import TransactionHistory from './components/transaction/TransactionHistory';
 import NotificationList from './components/notifications/NotificationList';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { useAuthContext } from './context/AuthContext';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function App() {
   const { currentUser } = useAuthContext();
@@ -32,6 +34,8 @@ function App() {
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         
         {/* Protected routes */}
         <Route path="/post-project" element={

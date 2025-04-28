@@ -70,4 +70,30 @@ export const authService = {
       return { success: false, message: error instanceof Error ? error.message : 'Failed to fetch user information.' };
     }
   },
+  forgotPassword: async (email: string) => {
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail }),
+      });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error.' };
+    }
+  },
+  resetPassword: async (email: string, token: string, newPassword: string) => {
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const res = await fetch(`${API_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail, token, newPassword }),
+      });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error.' };
+    }
+  },
 };
