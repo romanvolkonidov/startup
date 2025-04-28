@@ -42,7 +42,7 @@ app.options('*', cors());
 app.use(express.json());
 
 // MongoDB Atlas connection
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://romanvolkonidov:<db_password>@startup.8oukgfu.mongodb.net/?retryWrites=true&w=majority&appName=StartUp';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://romanvolkonidov:KXf39eGbFYVFEKL6@startup.8oukgfu.mongodb.net/?retryWrites=true&w=majority&appName=StartUp';
 
 mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
@@ -222,6 +222,28 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   } else {
     res.status(404).json({ message: 'User not found' });
   }
+});
+
+// Login endpoint
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
+  if (!user) {
+    return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+  }
+  // Check if user is verified (if you want to enforce email verification)
+  if (user.verified === false) {
+    return res.status(403).json({ success: false, message: 'Please verify your email before logging in.' });
+  }
+  // Compare password
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+  }
+  // Generate JWT
+  const token = jwt.sign({ id: user._id, email: user.email, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+  res.json({ success: true, token, user: { id: user._id, email: user.email, name: user.name, role: user.role } });
 });
 
 // Example of a protected route

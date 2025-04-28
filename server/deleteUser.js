@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const mongoose = require('mongoose');
 
 // Get email from command line arguments
@@ -9,7 +11,7 @@ if (!email) {
 }
 
 // Connect to MongoDB
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://romanvolkonidov:<db_password>@startup.8oukgfu.mongodb.net/?retryWrites=true&w=majority&appName=StartUp';
+const MONGO_URI = process.env.MONGO_URI;
 
 // User schema (must match your actual schema)
 const userSchema = new mongoose.Schema({
