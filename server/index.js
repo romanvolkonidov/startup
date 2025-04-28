@@ -197,6 +197,32 @@ app.post('/api/auth/signup', async (req, res) => {
   res.json({ success: true, message: 'Verification code sent. Please check your email.' });
 });
 
+// Request verification code only (no user creation)
+app.post('/api/auth/request-verification', async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+  if (user.verified) return res.json({ success: true, message: 'Email already verified.' });
+
+  // Generate new verification code or reuse if not expired
+  const now = new Date();
+  let code, expires;
+  if (user.verificationCode && user.verificationCodeExpires && user.verificationCodeExpires > now) {
+    code = user.verificationCode;
+    expires = user.verificationCodeExpires;
+  } else {
+    code = generateCode();
+    expires = new Date(now.getTime() + 2 * 60 * 1000);
+    user.verificationCode = code;
+    user.verificationCodeExpires = expires;
+    await user.save();
+  }
+
+  // Send code
+  await sendVerificationCode(email, user.name, code);
+  res.json({ success: true, message: 'Verification code sent. Please check your email.' });
+});
+
 // Verify code endpoint
 app.post('/api/auth/verify-code', async (req, res) => {
   const { email, code } = req.body;

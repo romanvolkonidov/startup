@@ -22,44 +22,19 @@ export default function VerifyEmail() {
     // Try to get email from query or localStorage
     const emailParam = searchParams.get('email');
     if (emailParam) {
-      console.log('Found email in URL params:', emailParam);
       setEmail(emailParam);
       localStorage.setItem('verifyEmail', emailParam);
     } else {
       const stored = localStorage.getItem('verifyEmail');
-      if (stored) {
-        console.log('Found email in localStorage:', stored);
-        setEmail(stored);
-      }
+      if (stored) setEmail(stored);
     }
   }, [searchParams]);
 
-  // Request code on mount if email is present
+  // Do NOT auto-request a code anymore
   useEffect(() => {
     if (email && !codeSent) {
-      console.log('Requesting verification code for:', email);
-      setStatus('loading');
-      
-      // Use a small delay to ensure state is updated
-      setTimeout(() => {
-        fetch(`${API_URL}/auth/signup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password: 'placeholder', name: 'placeholder' })
-        })
-          .then(res => res.json())
-          .then(data => {
-            console.log('Verification code response:', data);
-            setStatus('idle');
-            setMessage(data.message);
-            setCodeSent(true);
-          })
-          .catch((error) => {
-            console.error('Error requesting verification code:', error);
-            setStatus('error');
-            setMessage('Failed to send verification code.');
-          });
-      }, 500);
+      setMessage('Enter the verification code sent to your email.');
+      setCodeSent(true);
     }
   }, [email, codeSent]);
 
@@ -116,18 +91,13 @@ export default function VerifyEmail() {
   const handleResend = async () => {
     setResendStatus('loading');
     setMessage('Resending code...');
-    console.log('Resending verification code for:', email);
-    
     try {
-      const res = await fetch(`${API_URL}/auth/signup`, {
+      const res = await fetch(`${API_URL}/auth/request-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: 'placeholder', name: 'placeholder' })
+        body: JSON.stringify({ email })
       });
-      
       const data = await res.json();
-      console.log('Resend code response:', data);
-      
       if (res.ok && data.success) {
         setResendStatus('sent');
         setMessage('Verification code resent. Please check your email.');
@@ -136,7 +106,6 @@ export default function VerifyEmail() {
         setMessage(data.message || 'Failed to resend code.');
       }
     } catch (error) {
-      console.error('Resend error:', error);
       setResendStatus('error');
       setMessage('Failed to resend code.');
     }
