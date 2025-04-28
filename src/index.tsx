@@ -1,9 +1,9 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App';
-import { AuthProvider } from './context/AuthContext';
-import { NotificationProvider } from './context/NotificationContext';
-import { JobProvider } from './context/JobContext';
+import App from './App.tsx';
+import { AuthProvider } from './context/AuthContext.tsx';
+import { NotificationProvider } from './context/NotificationContext.tsx';
+import { JobProvider } from './context/JobContext.tsx';
 
 const container = document.getElementById('root');
 
