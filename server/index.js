@@ -137,156 +137,86 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// Add 'verified' field to user schema
-userSchema.add({ verified: { type: Boolean, default: false }, verificationToken: String });
-// Update user schema for profile picture
-userSchema.add({ profilePicture: { type: String } });
-// Update job schema for image and video
-jobSchema.add({ image: { type: String }, video: { type: String } });
-// Add savedBy field for saved posts
-jobSchema.add({ savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] });
-
-// File upload setup
-const UPLOADS_DIR = path.join(__dirname, '../uploads');
-app.use('/uploads', express.static(UPLOADS_DIR));
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, UPLOADS_DIR);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const base = path.basename(file.originalname, ext);
-    cb(null, base + '-' + Date.now() + ext);
-  }
-});
-const upload = multer({ storage });
-
-// Auth routes
-app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email, password });
-  if (user) {
-    if (!user.verified) {
-      return res.status(403).json({ success: false, message: 'Please verify your email before logging in.' });
-    }
-    // Include role in JWT and response
-    const token = jwt.sign({ id: user._id, email: user.email, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ success: true, token, user: { id: user._id, email: user.email, name: user.name, role: user.role } });
-  } else {
-    res.status(401).json({ success: false, message: 'Invalid credentials' });
-  }
+// Add 'verified' field and code fields to user schema
+userSchema.add({ 
+  verified: { type: Boolean, default: false },
+  verificationCode: String,
+  verificationCodeExpires: Date
 });
 
+// Helper to generate 6-digit code
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Send code by email
+async function sendVerificationCode(email, name, code) {
+  let frontendUrl = FRONTEND_URL;
+  if (!frontendUrl || frontendUrl === 'undefined') {
+    frontendUrl = 'https://startup-bp55.onrender.com';
+  }
+  await transporter.sendMail({
+    from: process.env.SMTP_USER || 'noreply@startupconnect.com',
+    to: email,
+    subject: 'Your StartUp Connect Verification Code',
+    html: `<p>Hello ${name},</p><p>Your verification code is: <b>${code}</b></p><p>This code is valid for 2 minutes.</p>`
+  });
+}
+
+// Signup or resend code
 app.post('/api/auth/signup', async (req, res) => {
   const { email, password, name } = req.body;
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    if (!existingUser.verified) {
-      // Resend verification email with a new token
-      const verificationToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1d' });
-      existingUser.verificationToken = verificationToken;
-      await existingUser.save();
-      await sendVerificationEmail(email, existingUser.name || name || 'User', verificationToken);
-      return res.status(200).json({ success: true, message: 'Verification email resent. Please check your inbox.' });
+  let user = await User.findOne({ email });
+  const now = new Date();
+  let code, expires;
+  if (user) {
+    if (!user.verified) {
+      // If code exists and not expired, reuse
+      if (user.verificationCode && user.verificationCodeExpires && user.verificationCodeExpires > now) {
+        code = user.verificationCode;
+        expires = user.verificationCodeExpires;
+      } else {
+        code = generateCode();
+        expires = new Date(now.getTime() + 2 * 60 * 1000);
+        user.verificationCode = code;
+        user.verificationCodeExpires = expires;
+        await user.save();
+      }
+      await sendVerificationCode(email, user.name || name || 'User', code);
+      return res.status(200).json({ success: true, message: 'Verification code sent. Please check your email.' });
     }
     return res.status(409).json({ success: false, message: 'Email already exists and is verified.' });
   }
-  const verificationToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1d' });
-  // Assign admin role if email matches
+  // New user
+  code = generateCode();
+  expires = new Date(now.getTime() + 2 * 60 * 1000);
   const role = email === 'volkonidovroman@gmail.com' ? 'admin' : 'user';
-  const newUser = new User({ email, password, name, verificationToken, role });
-  await newUser.save();
-  await sendVerificationEmail(email, name, verificationToken);
-  res.json({ success: true, message: 'Verification email sent. Please check your inbox.' });
+  user = new User({ email, password, name, verificationCode: code, verificationCodeExpires: expires, role });
+  await user.save();
+  await sendVerificationCode(email, name, code);
+  res.json({ success: true, message: 'Verification code sent. Please check your email.' });
 });
 
-// Email verification endpoint
-app.get('/api/auth/verify-email', async (req, res) => {
-  const { token } = req.query;
-  if (!token) {
-    return res.status(400).json({ success: false, message: 'Verification token is required.' });
+// Verify code endpoint
+app.post('/api/auth/verify-code', async (req, res) => {
+  const { email, code } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+  if (user.verified) return res.json({ success: true, message: 'Email already verified.' });
+  if (!user.verificationCode || !user.verificationCodeExpires) {
+    return res.status(400).json({ success: false, message: 'No verification code found. Please request a new code.' });
   }
-  
-  try {
-    // Try to decode the token first to check if it's valid JWT
-    const decoded = jwt.verify(token, JWT_SECRET);
-    
-    // Look up the user by email
-    const user = await User.findOne({ email: decoded.email });
-    console.log('Verifying email for:', decoded.email);
-    console.log('User found:', user ? 'Yes' : 'No');
-    
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found with the provided token.' });
-    }
-    
-    if (user.verified) {
-      return res.json({ success: true, message: 'Email already verified. You can now log in.' });
-    }
-    
-    // Instead of direct token comparison, verify if the stored token is valid
-    // and contains the same email as the token from the URL
-    if (!user.verificationToken) {
-      console.log('No verification token stored for user');
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid verification token. Please request a new verification email.' 
-      });
-    }
-    
-    try {
-      // Verify the stored token
-      const storedDecoded = jwt.verify(user.verificationToken, JWT_SECRET);
-      
-      // Compare the emails in both tokens
-      if (storedDecoded.email === decoded.email) {
-        // All checks passed, verify the user
-        user.verified = true;
-        user.verificationToken = undefined; // Clear the token
-        await user.save();
-        
-        return res.json({ success: true, message: 'Email verified successfully. You can now log in.' });
-      } else {
-        console.log('Email mismatch in tokens');
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid verification token. Please request a new verification email.' 
-        });
-      }
-    } catch (tokenErr) {
-      console.error('Stored token verification error:', tokenErr.message);
-      
-      // Check if the stored token expired
-      if (tokenErr.name === 'TokenExpiredError') {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Verification link has expired. Please request a new verification email.',
-          expired: true 
-        });
-      }
-      
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid verification token. Please request a new verification email.' 
-      });
-    }
-    
-  } catch (err) {
-    console.error('Verification error:', err.message);
-    
-    if (err.name === 'TokenExpiredError') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Verification link has expired. Please request a new verification email.',
-        expired: true 
-      });
-    }
-    
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Invalid verification token. Please try again or request a new verification email.' 
-    });
+  if (user.verificationCode !== code) {
+    return res.status(400).json({ success: false, message: 'Invalid code.' });
   }
+  if (user.verificationCodeExpires < new Date()) {
+    return res.status(400).json({ success: false, message: 'Code expired. Please request a new code.' });
+  }
+  user.verified = true;
+  user.verificationCode = undefined;
+  user.verificationCodeExpires = undefined;
+  await user.save();
+  res.json({ success: true, message: 'Email verified successfully.' });
 });
 
 // Get current user from JWT
