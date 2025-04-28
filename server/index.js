@@ -389,19 +389,26 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 app.post('/api/auth/reset-password', async (req, res) => {
   const { email, token, newPassword } = req.body;
   const normalizedEmail = email.trim().toLowerCase();
-  console.log('Reset password request:', { normalizedEmail, token });
+  const decodedToken = decodeURIComponent(token);
+  console.log('Reset password request:', { normalizedEmail, token, decodedToken });
 
   const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
     console.log('No user found for email:', normalizedEmail);
     return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
   }
+  // Log the user's reset token and expiration for debugging
+  console.log('User from DB:', {
+    resetPasswordToken: user.resetPasswordToken,
+    resetPasswordExpires: user.resetPasswordExpires,
+    now: new Date()
+  });
   if (!user.resetPasswordToken || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
     console.log('No valid reset token or token expired for user:', normalizedEmail);
     return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
   }
-  if (user.resetPasswordToken !== token) {
-    console.log('Token mismatch:', { expected: user.resetPasswordToken, received: token });
+  if (user.resetPasswordToken !== decodedToken) {
+    console.log('Token mismatch:', { expected: user.resetPasswordToken, received: decodedToken });
     return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
   }
   user.password = newPassword;
