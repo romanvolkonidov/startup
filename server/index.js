@@ -139,7 +139,16 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.post('/api/auth/signup', async (req, res) => {
   const { email, password, name } = req.body;
-  if (await User.findOne({ email })) {
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    if (!existingUser.verified) {
+      // Resend verification email with a new token
+      const verificationToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1d' });
+      existingUser.verificationToken = verificationToken;
+      await existingUser.save();
+      await sendVerificationEmail(email, existingUser.name, verificationToken);
+      return res.status(200).json({ success: true, message: 'Verification email resent. Please check your inbox.' });
+    }
     return res.status(409).json({ success: false, message: 'Email already exists' });
   }
   const verificationToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1d' });
