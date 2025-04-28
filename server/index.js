@@ -433,7 +433,9 @@ app.post('/api/auth/reset-password', async (req, res) => {
     console.log('Token mismatch:', { expected: user.resetPasswordToken, received: decodedToken });
     return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
   }
-  user.password = newPassword;
+  // Hash the new password before saving
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  user.password = hashedPassword;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
   await user.save();
