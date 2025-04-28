@@ -389,8 +389,19 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 app.post('/api/auth/reset-password', async (req, res) => {
   const { email, token, newPassword } = req.body;
   const normalizedEmail = email.trim().toLowerCase();
-  const user = await User.findOne({ email: normalizedEmail, resetPasswordToken: token });
-  if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+  console.log('Reset password request:', { normalizedEmail, token });
+
+  const user = await User.findOne({ email: normalizedEmail });
+  if (!user) {
+    console.log('No user found for email:', normalizedEmail);
+    return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
+  }
+  if (!user.resetPasswordToken || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+    console.log('No valid reset token or token expired for user:', normalizedEmail);
+    return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
+  }
+  if (user.resetPasswordToken !== token) {
+    console.log('Token mismatch:', { expected: user.resetPasswordToken, received: token });
     return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
   }
   user.password = newPassword;
