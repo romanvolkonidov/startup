@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const path = require('path');
 const multer = require('multer');
+const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -149,40 +150,26 @@ function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Send code by email
-async function sendVerificationCode(email, name, code) {
-  let frontendUrl = FRONTEND_URL;
-  if (!frontendUrl || frontendUrl === 'undefined') {
-    frontendUrl = 'https://startup-bp55.onrender.com';
-  }
-  await transporter.sendMail({
-    from: process.env.SMTP_USER || 'noreply@startupconnect.com',
-    to: email,
-    subject: 'Your StartUp Connect Verification Code',
-    html: `<p>Hello ${name},</p><p>Your verification code is: <b>${code}</b></p><p>This code is valid for 2 minutes.</p>`
-  });
-}
-
 // Signup or resend code
 app.post('/api/auth/signup', async (req, res) => {
-  const { email, password, name } = req.body;
+  const email = req.body.email.trim().toLowerCase();
+  const password = req.body.password;
+  const name = req.body.name;
   let user = await User.findOne({ email });
   const now = new Date();
   let code, expires;
   if (user) {
     if (!user.verified) {
-      // If code exists and not expired, reuse
       if (user.verificationCode && user.verificationCodeExpires && user.verificationCodeExpires > now) {
-        code = user.verificationCode;
-        expires = user.verificationCodeExpires;
+        code = user._plainCode; // Not stored, so always generate new
       } else {
         code = generateCode();
         expires = new Date(now.getTime() + 2 * 60 * 1000);
-        user.verificationCode = code;
+        user.verificationCode = await bcrypt.hash(code, 10);
         user.verificationCodeExpires = expires;
         await user.save();
       }
-      await sendVerificationCode(email, user.name || name || 'User', code);
+      await sendVerificationCode(email, user.name || name || 'User', code || '******');
       return res.status(200).json({ success: true, message: 'Verification code sent. Please check your email.' });
     }
     return res.status(409).json({ success: false, message: 'Email already exists and is verified.' });
@@ -191,7 +178,7 @@ app.post('/api/auth/signup', async (req, res) => {
   code = generateCode();
   expires = new Date(now.getTime() + 2 * 60 * 1000);
   const role = email === 'volkonidovroman@gmail.com' ? 'admin' : 'user';
-  user = new User({ email, password, name, verificationCode: code, verificationCodeExpires: expires, role });
+  user = new User({ email, password, name, verificationCode: await bcrypt.hash(code, 10), verificationCodeExpires: expires, role });
   await user.save();
   await sendVerificationCode(email, name, code);
   res.json({ success: true, message: 'Verification code sent. Please check your email.' });
@@ -199,44 +186,43 @@ app.post('/api/auth/signup', async (req, res) => {
 
 // Request verification code only (no user creation)
 app.post('/api/auth/request-verification', async (req, res) => {
-  const { email } = req.body;
+  const email = req.body.email.trim().toLowerCase();
   const user = await User.findOne({ email });
   if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
   if (user.verified) return res.json({ success: true, message: 'Email already verified.' });
 
-  // Generate new verification code or reuse if not expired
   const now = new Date();
   let code, expires;
   if (user.verificationCode && user.verificationCodeExpires && user.verificationCodeExpires > now) {
-    code = user.verificationCode;
-    expires = user.verificationCodeExpires;
+    code = null; // Always generate a new code for security
   } else {
     code = generateCode();
     expires = new Date(now.getTime() + 2 * 60 * 1000);
-    user.verificationCode = code;
+    user.verificationCode = await bcrypt.hash(code, 10);
     user.verificationCodeExpires = expires;
     await user.save();
   }
-
-  // Send code
+  if (!code) code = generateCode(); // fallback
   await sendVerificationCode(email, user.name, code);
   res.json({ success: true, message: 'Verification code sent. Please check your email.' });
 });
 
 // Verify code endpoint
 app.post('/api/auth/verify-code', async (req, res) => {
-  const { email, code } = req.body;
+  const email = req.body.email.trim().toLowerCase();
+  const code = req.body.code;
   const user = await User.findOne({ email });
   if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
   if (user.verified) return res.json({ success: true, message: 'Email already verified.' });
   if (!user.verificationCode || !user.verificationCodeExpires) {
     return res.status(400).json({ success: false, message: 'No verification code found. Please request a new code.' });
   }
-  if (user.verificationCode !== code) {
-    return res.status(400).json({ success: false, message: 'Invalid code.' });
-  }
   if (user.verificationCodeExpires < new Date()) {
     return res.status(400).json({ success: false, message: 'Code expired. Please request a new code.' });
+  }
+  const isMatch = await bcrypt.compare(code, user.verificationCode);
+  if (!isMatch) {
+    return res.status(400).json({ success: false, message: 'Invalid code.' });
   }
   user.verified = true;
   user.verificationCode = undefined;

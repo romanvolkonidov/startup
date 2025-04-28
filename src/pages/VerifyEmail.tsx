@@ -40,6 +40,8 @@ export default function VerifyEmail() {
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Normalize email
+    const normalizedEmail = email.trim().toLowerCase();
     
     console.log('Submitting verification with:', { email, code });
     
@@ -62,7 +64,7 @@ export default function VerifyEmail() {
       const res = await fetch(`${API_URL}/auth/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code })
+        body: JSON.stringify({ email: normalizedEmail, code })
       });
       
       const data = await res.json();
@@ -91,11 +93,13 @@ export default function VerifyEmail() {
   const handleResend = async () => {
     setResendStatus('loading');
     setMessage('Resending code...');
+    // Normalize email
+    const normalizedEmail = email.trim().toLowerCase();
     try {
       const res = await fetch(`${API_URL}/auth/request-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email: normalizedEmail })
       });
       const data = await res.json();
       if (res.ok && data.success) {
