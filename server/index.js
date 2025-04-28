@@ -98,10 +98,16 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendVerificationEmail(email, name, token) {
-  // Use FRONTEND_URL from environment variables
+  // Ensure we have a valid frontend URL, with fallback options
+  let frontendUrl = FRONTEND_URL;
+  if (!frontendUrl || frontendUrl === 'undefined') {
+    console.warn('FRONTEND_URL environment variable not set, using fallback URL');
+    frontendUrl = 'https://startup-bp55.onrender.com'; // Fallback to production URL
+  }
+  
   // Encode the token to make sure it's URL-safe
   const encodedToken = encodeURIComponent(token);
-  const verifyUrl = `${FRONTEND_URL}/verify-email?token=${encodedToken}`;
+  const verifyUrl = `${frontendUrl}/verify-email?token=${encodedToken}`;
   
   console.log(`Sending verification email to ${email} with URL: ${verifyUrl}`);
   
@@ -218,18 +224,52 @@ app.get('/api/auth/verify-email', async (req, res) => {
       return res.json({ success: true, message: 'Email already verified. You can now log in.' });
     }
     
-    // Check if token matches stored token
-    if (user.verificationToken !== token) {
-      console.log('Token mismatch. Expected:', user.verificationToken, 'Received:', token);
-      return res.status(400).json({ success: false, message: 'Invalid verification token. Please request a new verification email.' });
+    // Instead of direct token comparison, verify if the stored token is valid
+    // and contains the same email as the token from the URL
+    if (!user.verificationToken) {
+      console.log('No verification token stored for user');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid verification token. Please request a new verification email.' 
+      });
     }
     
-    // All checks passed, verify the user
-    user.verified = true;
-    user.verificationToken = undefined; // Clear the token
-    await user.save();
-    
-    return res.json({ success: true, message: 'Email verified successfully. You can now log in.' });
+    try {
+      // Verify the stored token
+      const storedDecoded = jwt.verify(user.verificationToken, JWT_SECRET);
+      
+      // Compare the emails in both tokens
+      if (storedDecoded.email === decoded.email) {
+        // All checks passed, verify the user
+        user.verified = true;
+        user.verificationToken = undefined; // Clear the token
+        await user.save();
+        
+        return res.json({ success: true, message: 'Email verified successfully. You can now log in.' });
+      } else {
+        console.log('Email mismatch in tokens');
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid verification token. Please request a new verification email.' 
+        });
+      }
+    } catch (tokenErr) {
+      console.error('Stored token verification error:', tokenErr.message);
+      
+      // Check if the stored token expired
+      if (tokenErr.name === 'TokenExpiredError') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Verification link has expired. Please request a new verification email.',
+          expired: true 
+        });
+      }
+      
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid verification token. Please request a new verification email.' 
+      });
+    }
     
   } catch (err) {
     console.error('Verification error:', err.message);
