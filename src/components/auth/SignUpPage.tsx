@@ -34,18 +34,23 @@ const SignUpPage: React.FC = () => {
             setError('');
             setLoading(true);
             try {
+              console.log('Starting signup process...');
               const res = await signup(values.email, values.password, values.email.split('@')[0]);
+              
               if (res.success) {
                 addNotification({ message: 'Account created! Please check your email to verify your account.', type: 'success' });
                 navigate(`/verify-email?email=${encodeURIComponent(values.email)}`);
               } else {
+                console.log('Signup failed:', res);
                 setError(res.message || 'Sign up failed');
                 addNotification({ message: res.message || 'Sign up failed', type: 'error' });
                 setFieldError('email', res.message || 'Sign up failed');
               }
             } catch (err) {
-              setError('Something went wrong.');
-              addNotification({ message: 'Something went wrong.', type: 'error' });
+              console.error('Signup exception:', err);
+              const errorMessage = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+              setError(errorMessage);
+              addNotification({ message: errorMessage, type: 'error' });
             }
             setLoading(false);
             setSubmitting(false);
