@@ -37,7 +37,7 @@ const SignUpPage: React.FC = () => {
               const res = await signup(values.email, values.password, values.email.split('@')[0]);
               if (res.success) {
                 addNotification({ message: 'Account created! Please check your email to verify your account.', type: 'success' });
-                navigate('/login');
+                navigate(`/verify-email?email=${encodeURIComponent(values.email)}`);
               } else {
                 setError(res.message || 'Sign up failed');
                 addNotification({ message: res.message || 'Sign up failed', type: 'error' });
