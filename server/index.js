@@ -264,12 +264,14 @@ app.get('/api/protected', authenticateToken, (req, res) => {
   res.json({ message: 'This is a protected route', user: req.user });
 });
 
-// Jobs routes
+// Jobs routes - REORGANIZED TO PREVENT ROUTE CONFLICTS
+// 1. Get all jobs - specific route first
 app.get('/api/jobs', async (req, res) => {
   const jobs = await Job.find();
   res.json(jobs);
 });
 
+// 2. Create a new job
 app.post('/api/jobs', async (req, res) => {
   const { title, description, owner, amount, returnPercent, paybackTime, email, phone, whatsapp, instagram, facebook } = req.body;
   const newJob = new Job({
@@ -290,6 +292,14 @@ app.post('/api/jobs', async (req, res) => {
   res.json({ success: true, job: newJob });
 });
 
+// 3. Get user's saved jobs - moved to user routes section to avoid conflicts
+app.get('/api/user/saved-jobs', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const jobs = await Job.find({ savedBy: userId });
+  res.json(jobs);
+});
+
+// 4. Get job by ID - parametric route last
 app.get('/api/jobs/:id', async (req, res) => {
   const job = await Job.findById(req.params.id);
   if (job) {
@@ -299,7 +309,7 @@ app.get('/api/jobs/:id', async (req, res) => {
   }
 });
 
-// Save/Unsave a job post for the current user
+// 5. Save/Unsave a job post for the current user
 app.post('/api/jobs/:id/save', authenticateToken, async (req, res) => {
   const jobId = req.params.id;
   const userId = req.user.id;
@@ -315,13 +325,6 @@ app.post('/api/jobs/:id/save', authenticateToken, async (req, res) => {
   }
   await job.save();
   res.json({ success: true, saved: !alreadySaved, saveCount: job.savedBy.length });
-});
-
-// Get all jobs saved by the current user - FIXED: Changed route from possibly conflicting path
-app.get('/api/user/saved-jobs', authenticateToken, async (req, res) => {
-  const userId = req.user.id;
-  const jobs = await Job.find({ savedBy: userId });
-  res.json(jobs);
 });
 
 // Notifications routes
