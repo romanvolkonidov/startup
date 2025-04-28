@@ -2,18 +2,20 @@ const API_URL = process.env.REACT_APP_API_URL || 'https://startup-bp55.onrender.
 
 export const authService = {
   login: async (email: string, password: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: normalizedEmail, password }),
     });
     return await res.json();
   },
   signup: async (email: string, password: string, name: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
     const res = await fetch(`${API_URL}/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email: normalizedEmail, password, name }),
     });
     return await res.json();
   },
