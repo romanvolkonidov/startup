@@ -9,8 +9,10 @@ const multer = require('multer');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const FRONTEND_URL = process.env.FRONTEND_URL; // Add this line
+
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: FRONTEND_URL, // Use the environment variable
   credentials: true,
 }));
 app.use(express.json());
