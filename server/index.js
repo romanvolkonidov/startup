@@ -165,13 +165,21 @@ app.get('/api/auth/verify-email', async (req, res) => {
   const { token } = req.query;
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findOne({ email: decoded.email, verificationToken: token });
+    const user = await User.findOne({ email: decoded.email });
+    console.log('Decoded email:', decoded.email);
+    console.log('User found:', !!user);
     if (!user) return res.status(400).json({ success: false, message: 'Invalid or expired token.' });
+    if (user.verified) return res.json({ success: true, message: 'Email already verified.' });
+    if (user.verificationToken !== token) {
+      console.log('Token mismatch:', user.verificationToken, token);
+      return res.status(400).json({ success: false, message: 'Invalid or expired token.' });
+    }
     user.verified = true;
     user.verificationToken = undefined;
     await user.save();
     res.json({ success: true, message: 'Email verified successfully.' });
   } catch (err) {
+    console.log('JWT error:', err);
     res.status(400).json({ success: false, message: 'Invalid or expired token.' });
   }
 });
