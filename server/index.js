@@ -186,10 +186,10 @@ app.post('/api/auth/signup', async (req, res) => {
       const verificationToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1d' });
       existingUser.verificationToken = verificationToken;
       await existingUser.save();
-      await sendVerificationEmail(email, existingUser.name, verificationToken);
+      await sendVerificationEmail(email, existingUser.name || name || 'User', verificationToken);
       return res.status(200).json({ success: true, message: 'Verification email resent. Please check your inbox.' });
     }
-    return res.status(409).json({ success: false, message: 'Email already exists' });
+    return res.status(409).json({ success: false, message: 'Email already exists and is verified.' });
   }
   const verificationToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1d' });
   // Assign admin role if email matches
