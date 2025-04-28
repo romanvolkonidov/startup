@@ -1,0 +1,18 @@
+/*
+  Theme variables for StartUp Connect
+  Primary: Blue (#1e88e5), Green (#43a047)
+  Secondary: White (#fff), Light Gray (#f7f7f7), Dark Gray (#222, #333, #757575)
+  Accent: Orange (#e65100), Purple (#8e24aa)
+*/
+
+:root {
+  --color-primary-blue: #1e88e5;
+  --color-primary-green: #43a047;
+  --color-secondary-white: #fff;
+  --color-secondary-light-gray: #f7f7f7;
+  --color-secondary-dark-gray: #222;
+  --color-secondary-mid-gray: #333;
+  --color-secondary-muted: #757575;
+  --color-accent-orange: #e65100;
+  --color-accent-purple: #8e24aa;
+}

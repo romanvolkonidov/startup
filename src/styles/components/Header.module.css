@@ -1,0 +1,94 @@
+/*
+  Header styles for StartUp Connect
+  Uses theme colors for navigation/header UI
+*/
+
+.headerContainer {
+  width: 100%;
+  background: linear-gradient(90deg, #1e88e5 60%, #43a047 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+  padding: 0;
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+}
+
+.logo {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1px;
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  gap: 24px;
+}
+
+.navLink {
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 500;
+  text-decoration: none;
+  padding: 6px 16px;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+.navLink:hover {
+  background: #8e24aa; /* Purple accent */
+  color: #fff;
+}
+
+.ctaButton {
+  background: linear-gradient(90deg, #e65100 60%, #8e24aa 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 24px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.10);
+}
+.ctaButton:hover {
+  background: linear-gradient(90deg, #8e24aa 60%, #e65100 100%);
+}
+
+@media (max-width: 600px) {
+  .headerContent {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 8px;
+    gap: 10px;
+  }
+  .logo {
+    font-size: 1.2rem;
+    margin-bottom: 6px;
+  }
+  .nav {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .navLink {
+    font-size: 0.98rem;
+    padding: 8px 10px;
+    width: 100%;
+    text-align: left;
+  }
+  .ctaButton {
+    width: 100%;
+    padding: 10px 0;
+    font-size: 1rem;
+    margin-top: 6px;
+  }
+}

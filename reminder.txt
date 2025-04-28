@@ -1,0 +1,74 @@
+src/
+├── assets/                        # Static assets like images, icons, fonts
+│   ├── images/                    # Store all image files here (e.g., logos, icons)
+│   ├── icons/                     # Store all icon files (e.g., SVG, PNG)
+│   └── fonts/                     # Store any custom fonts
+│
+├── components/                    # Reusable components for the UI
+│   ├── auth/                      # Auth-related components
+│   │   ├── LoginPage.tsx          # (1) Create LoginPage.tsx
+│   │   └── SignUpPage.tsx         # (2) Create SignUpPage.tsx
+│   ├── dashboard/                 # Dashboard and job post components
+│   │   ├── Dashboard.tsx          # (3) Create Dashboard.tsx
+│   │   ├── JobPostList.tsx        # (4) Create JobPostList.tsx
+│   │   └── JobCard.tsx            # (5) Create JobCard.tsx
+│   ├── jobPost/                   # Components related to job posting
+│   │   ├── PostJobPage.tsx        # (6) Create PostJobPage.tsx
+│   │   └── JobDetails.tsx         # (7) Create JobDetails.tsx
+│   ├── investment/                # Components related to investment and agreements
+│   │   ├── InvestmentPage.tsx     # (8) Create InvestmentPage.tsx
+│   │   └── AgreementForm.tsx      # (9) Create AgreementForm.tsx
+│   ├── user/                      # User profile and settings
+│   │   ├── ProfilePage.tsx        # (10) Create ProfilePage.tsx
+│   │   └── SettingsPage.tsx       # (11) Create SettingsPage.tsx
+│   ├── payment/                   # Payment and commission related components
+│   │   ├── PaymentPage.tsx        # (12) Create PaymentPage.tsx
+│   │   └── CommissionDetails.tsx  # (13) Create CommissionDetails.tsx
+│   ├── notifications/             # Notifications and alert modals
+│   │   ├── NotificationList.tsx   # (14) Create NotificationList.tsx
+│   │   └── AlertModal.tsx         # (15) Create AlertModal.tsx
+│   ├── support/                   # Support and feedback components
+│   │   ├── SupportPage.tsx        # (16) Create SupportPage.tsx
+│   │   └── FeedbackForm.tsx       # (17) Create FeedbackForm.tsx
+│   ├── transaction/               # Transaction history components
+│   │   └── TransactionHistory.tsx # (18) Create TransactionHistory.tsx
+│
+├── hooks/                         # Custom React hooks
+│   ├── useAuth.tsx                # (19) Create useAuth.tsx
+│   ├── usePayment.tsx             # (20) Create usePayment.tsx
+│   └── useNotification.tsx        # (21) Create useNotification.tsx
+│
+├── services/                      # Services and APIs for data fetching
+│   ├── authService.ts             # (22) Create authService.ts
+│   ├── jobService.ts              # (23) Create jobService.ts
+│   ├── paymentService.ts          # (24) Create paymentService.ts
+│   ├── notificationService.ts     # (25) Create notificationService.ts
+│   └── userService.ts             # (26) Create userService.ts
+│
+├── pages/                         # Pages that represent full views
+│   ├── HomePage.tsx               # (27) Create HomePage.tsx
+│   ├── TermsPage.tsx              # (28) Create TermsPage.tsx
+│   ├── PrivacyPage.tsx            # (29) Create PrivacyPage.tsx
+│   └── NotFoundPage.tsx           # (30) Create NotFoundPage.tsx
+│
+├── context/                       # Global state management (e.g., React Context API)
+│   ├── AuthContext.tsx            # (31) Create AuthContext.tsx
+│   ├── PaymentContext.tsx         # (32) Create PaymentContext.tsx
+│   └── NotificationContext.tsx    # (33) Create NotificationContext.tsx
+│
+├── utils/                         # Utility functions
+│   ├── formatCurrency.ts          # (34) Create formatCurrency.ts
+│   ├── validateForm.ts            # (35) Create validateForm.ts
+│   └── dateUtils.ts               # (36) Create dateUtils.ts
+│
+├── styles/                        # Global and component-specific styles
+│   ├── globalStyles.css           # (37) Create globalStyles.css
+│   ├── theme.css                  # (38) Create theme.css
+│   ├── components/                # Component-specific styles (optional, if CSS modules are used)
+│   │   ├── Button.module.css      # (39) Create Button.module.css
+│   │   ├── Form.module.css        # (40) Create Form.module.css
+│   │   └── Header.module.css      # (41) Create Header.module.css
+│
+├── App.tsx                        # (42) Create App.tsx (Root component for the app)
+├── index.tsx                      # (43) Create index.tsx (Entry point for React app)
+└── .env                            # (44) Create .env (Environment variables)

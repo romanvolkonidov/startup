@@ -1,0 +1,80 @@
+/*
+  Global Styles for StartUp Connect
+  Primary: Blue (#1e88e5), Green (#43a047)
+  Secondary: White (#fff), Light Gray (#f7f7f7), Dark Gray (#222, #333, #757575)
+  Accent: Orange (#e65100), Purple (#8e24aa)
+*/
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+  background: #fff;
+  color: #222;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: #1e88e5;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+a:hover {
+  color: #8e24aa;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #1e88e5;
+  font-weight: 700;
+  margin-top: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  background: #f7f7f7;
+}
+::-webkit-scrollbar-thumb {
+  background: #e0e0e0;
+  border-radius: 4px;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 24px 0;
+}
+
+@media (max-width: 600px) {
+  html, body {
+    font-size: 15px;
+    padding: 0;
+  }
+  h1 {
+    font-size: 1.5rem;
+  }
+  h2 {
+    font-size: 1.2rem;
+  }
+  h3 {
+    font-size: 1.1rem;
+  }
+  .container, .main, .content {
+    padding: 8px !important;
+  }
+  button, input, textarea, select {
+    font-size: 1rem;
+  }
+}
