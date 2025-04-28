@@ -66,7 +66,7 @@ export const jobService = {
   },
   getSavedJobs: async (token: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/jobs/saved`, {
+      const res = await fetch(`${API_BASE_URL}/user/saved-jobs`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
