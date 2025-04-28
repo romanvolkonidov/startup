@@ -19,20 +19,39 @@ export const authService = {
   signup: async (email: string, password: string, name: string) => {
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      console.log('Sending signup request to:', `${API_URL}/auth/signup`);
-      console.log('With data:', { email: normalizedEmail, name });
+      const endpoint = `${API_URL}/auth/signup`;
       
-      const res = await fetch(`${API_URL}/auth/signup`, {
+      console.log('Signup request details:');
+      console.log('- API URL:', API_URL);
+      console.log('- Full endpoint:', endpoint);
+      console.log('- Email:', normalizedEmail);
+      console.log('- Name:', name);
+      
+      // Test if the API is reachable with a simple OPTIONS request
+      try {
+        const testResponse = await fetch(endpoint, { method: 'OPTIONS' });
+        console.log('API reachable:', testResponse.ok, 'Status:', testResponse.status);
+      } catch (testError) {
+        console.error('API not reachable:', testError);
+      }
+      
+      const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        // Include credentials if your API requires them
+        credentials: 'include',
         body: JSON.stringify({ email: normalizedEmail, password, name }),
       });
       
+      console.log('Signup response status:', res.status);
       const data = await res.json();
-      console.log('Signup response:', data);
+      console.log('Signup response data:', data);
       return data;
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error('Signup error details:', error);
       return { 
         success: false, 
         message: 'Network error. Please check your connection and try again.' 
