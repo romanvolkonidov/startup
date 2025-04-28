@@ -17,9 +17,8 @@ app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     const allowedOrigins = [
-      'http://localhost:3000',
       'https://startup-bp55.onrender.com',
-      // Add any other frontend origins that need access
+      'https://startup-lthu.vercel.app'
     ];
     
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
