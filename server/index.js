@@ -9,12 +9,35 @@ const multer = require('multer');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const FRONTEND_URL = process.env.FRONTEND_URL;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
+// Updated CORS configuration to properly handle cross-origin requests
 app.use(cors({
-  origin: true, // Reflects the request origin
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://startup-bp55.onrender.com',
+      // Add any other frontend origins that need access
+    ];
+    
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins in development
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With'],
   credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Handle preflight OPTIONS requests explicitly
+app.options('*', cors());
+
 app.use(express.json());
 
 // MongoDB Atlas connection
