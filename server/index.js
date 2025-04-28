@@ -155,32 +155,13 @@ app.post('/api/auth/signup', async (req, res) => {
   const password = req.body.password;
   const name = req.body.name;
   let user = await User.findOne({ email });
-  const now = new Date();
-  let code, expires;
   if (user) {
-    if (!user.verified) {
-      if (user.verificationCode && user.verificationCodeExpires && user.verificationCodeExpires > now) {
-        code = user._plainCode; // Not stored, so always generate new
-      } else {
-        code = generateCode();
-        expires = new Date(now.getTime() + 2 * 60 * 1000);
-        user.verificationCode = await bcrypt.hash(code, 10);
-        user.verificationCodeExpires = expires;
-        await user.save();
-      }
-      await sendVerificationCode(email, user.name || name || 'User', code || '******');
-      return res.status(200).json({ success: true, message: 'Verification code sent. Please check your email.' });
-    }
-    return res.status(409).json({ success: false, message: 'Email already exists and is verified.' });
+    return res.status(409).json({ success: false, message: 'Email already exists.' });
   }
-  // New user
-  code = generateCode();
-  expires = new Date(now.getTime() + 2 * 60 * 1000);
   const role = email === 'volkonidovroman@gmail.com' ? 'admin' : 'user';
-  user = new User({ email, password, name, verificationCode: await bcrypt.hash(code, 10), verificationCodeExpires: expires, role });
+  user = new User({ email, password, name, verified: true, role });
   await user.save();
-  await sendVerificationCode(email, name, code);
-  res.json({ success: true, message: 'Verification code sent. Please check your email.' });
+  res.json({ success: true, message: 'Account created and verified.' });
 });
 
 // Request verification code only (no user creation)
