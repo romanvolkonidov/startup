@@ -75,7 +75,8 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendVerificationEmail(email, name, token) {
-  const verifyUrl = `http://localhost:3000/verify-email?token=${token}`;
+  // Use FRONTEND_URL from environment variables
+  const verifyUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
   await transporter.sendMail({
     from: process.env.SMTP_USER,
     to: email,
