@@ -99,13 +99,24 @@ const transporter = nodemailer.createTransport({
 
 async function sendVerificationEmail(email, name, token) {
   // Use FRONTEND_URL from environment variables
-  const verifyUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
-  await transporter.sendMail({
-    from: process.env.SMTP_USER,
-    to: email,
-    subject: 'Verify your email for StartUp Connect',
-    html: `<p>Hello ${name},</p><p>Thank you for registering at StartUp Connect.</p><p>Please verify your email by clicking <a href="${verifyUrl}">here</a>.</p>`
-  });
+  // Encode the token to make sure it's URL-safe
+  const encodedToken = encodeURIComponent(token);
+  const verifyUrl = `${FRONTEND_URL}/verify-email?token=${encodedToken}`;
+  
+  console.log(`Sending verification email to ${email} with URL: ${verifyUrl}`);
+  
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_USER || 'noreply@startupconnect.com',
+      to: email,
+      subject: 'Verify your email for StartUp Connect',
+      html: `<p>Hello ${name},</p><p>Thank you for registering at StartUp Connect.</p><p>Please verify your email by clicking <a href="${verifyUrl}">here</a>.</p><p>If the link doesn't work, copy and paste this URL into your browser: ${verifyUrl}</p><p>This link will expire in 24 hours.</p>`
+    });
+    console.log(`Verification email sent successfully to ${email}`);
+  } catch (error) {
+    console.error(`Error sending verification email to ${email}:`, error);
+    throw error;
+  }
 }
 
 // Middleware to verify JWT
@@ -186,24 +197,55 @@ app.post('/api/auth/signup', async (req, res) => {
 // Email verification endpoint
 app.get('/api/auth/verify-email', async (req, res) => {
   const { token } = req.query;
+  if (!token) {
+    return res.status(400).json({ success: false, message: 'Verification token is required.' });
+  }
+  
   try {
+    // Try to decode the token first to check if it's valid JWT
     const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Look up the user by email
     const user = await User.findOne({ email: decoded.email });
-    console.log('Decoded email:', decoded.email);
-    console.log('User found:', !!user);
-    if (!user) return res.status(400).json({ success: false, message: 'Invalid or expired token.' });
-    if (user.verified) return res.json({ success: true, message: 'Email already verified.' });
-    if (user.verificationToken !== token) {
-      console.log('Token mismatch:', user.verificationToken, token);
-      return res.status(400).json({ success: false, message: 'Invalid or expired token.' });
+    console.log('Verifying email for:', decoded.email);
+    console.log('User found:', user ? 'Yes' : 'No');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found with the provided token.' });
     }
+    
+    if (user.verified) {
+      return res.json({ success: true, message: 'Email already verified. You can now log in.' });
+    }
+    
+    // Check if token matches stored token
+    if (user.verificationToken !== token) {
+      console.log('Token mismatch. Expected:', user.verificationToken, 'Received:', token);
+      return res.status(400).json({ success: false, message: 'Invalid verification token. Please request a new verification email.' });
+    }
+    
+    // All checks passed, verify the user
     user.verified = true;
-    user.verificationToken = undefined;
+    user.verificationToken = undefined; // Clear the token
     await user.save();
-    res.json({ success: true, message: 'Email verified successfully.' });
+    
+    return res.json({ success: true, message: 'Email verified successfully. You can now log in.' });
+    
   } catch (err) {
-    console.log('JWT error:', err);
-    res.status(400).json({ success: false, message: 'Invalid or expired token.' });
+    console.error('Verification error:', err.message);
+    
+    if (err.name === 'TokenExpiredError') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Verification link has expired. Please request a new verification email.',
+        expired: true 
+      });
+    }
+    
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Invalid verification token. Please try again or request a new verification email.' 
+    });
   }
 });
 
