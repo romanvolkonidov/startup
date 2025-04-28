@@ -317,8 +317,8 @@ app.post('/api/jobs/:id/save', authenticateToken, async (req, res) => {
   res.json({ success: true, saved: !alreadySaved, saveCount: job.savedBy.length });
 });
 
-// Get all jobs saved by the current user
-app.get('/api/jobs/saved', authenticateToken, async (req, res) => {
+// Get all jobs saved by the current user - FIXED: Changed route from possibly conflicting path
+app.get('/api/user/saved-jobs', authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const jobs = await Job.find({ savedBy: userId });
   res.json(jobs);
