@@ -272,6 +272,10 @@ async function enrichJobsWithOwnerInfo(jobs, minimal = false) {
   const jobArray = Array.isArray(jobs) ? jobs : [jobs];
   const enrichedJobs = [];
   
+  // Import ObjectId for validation
+  const mongoose = require('mongoose');
+  const { ObjectId } = mongoose.Types;
+  
   for (const job of jobArray) {
     let jobObj = job;
     if (job.toObject) {
@@ -282,20 +286,27 @@ async function enrichJobsWithOwnerInfo(jobs, minimal = false) {
 
     // Get the user info for the job owner
     try {
-      const owner = await User.findById(jobObj.owner);
-      if (owner) {
-        if (minimal) {
-          // Just include essential owner info for list views
-          jobObj.ownerId = owner._id;
-          jobObj.ownerProfilePicture = owner.profilePicture;
-          jobObj.owner = owner.name; // Replace owner ID with name
-        } else {
-          // Include more owner details for detailed view
-          jobObj.ownerId = owner._id;
-          jobObj.ownerProfilePicture = owner.profilePicture;
-          jobObj.owner = owner.name; // Replace owner ID with name
-          jobObj.ownerJoined = owner.joined;
+      // Check if owner is a valid MongoDB ObjectId before querying
+      if (jobObj.owner && ObjectId.isValid(jobObj.owner)) {
+        const owner = await User.findById(jobObj.owner);
+        if (owner) {
+          if (minimal) {
+            // Just include essential owner info for list views
+            jobObj.ownerId = owner._id;
+            jobObj.ownerProfilePicture = owner.profilePicture;
+            jobObj.owner = owner.name; // Replace owner ID with name
+          } else {
+            // Include more owner details for detailed view
+            jobObj.ownerId = owner._id;
+            jobObj.ownerProfilePicture = owner.profilePicture;
+            jobObj.owner = owner.name; // Replace owner ID with name
+            jobObj.ownerJoined = owner.joined;
+          }
         }
+      } else {
+        // If owner is not a valid ObjectId, use it as a display name
+        jobObj.ownerName = jobObj.owner; // Store the non-ObjectId value as ownerName
+        // Don't attempt to query the database with an invalid ID
       }
     } catch (err) {
       console.error('Error enriching job with owner data:', err);
