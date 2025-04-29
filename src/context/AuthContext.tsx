@@ -10,8 +10,8 @@ interface User {
 interface AuthContextType {
   currentUser: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<any>;
-  signup: (email: string, password: string, name: string) => Promise<any>;
+  loginWithFirebase: (email: string, password: string) => Promise<any>;
+  signupWithFirebase: (email: string, password: string, name: string) => Promise<any>;
   logout: () => void;
   loading: boolean;
   setToken: (token: string | null) => void;
@@ -35,11 +35,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     };
     checkUser();
-    // eslint-disable-next-line
   }, [token]);
 
-  const login = async (email: string, password: string) => {
-    const res = await authService.login(email, password);
+  const loginWithFirebase = async (email: string, password: string) => {
+    const res = await authService.loginWithFirebase(email, password);
     if (res.success && res.token) {
       setToken(res.token);
       localStorage.setItem('token', res.token);
@@ -48,8 +47,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return res;
   };
 
-  const signup = async (email: string, password: string, name: string) => {
-    const res = await authService.signup(email, password, name);
+  const signupWithFirebase = async (email: string, password: string, name: string) => {
+    const res = await authService.signupWithFirebase(email, password, name);
     if (res.success && res.token) {
       setToken(res.token);
       localStorage.setItem('token', res.token);
@@ -65,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, token, login, signup, logout, loading, setToken, setCurrentUser }}>
+    <AuthContext.Provider value={{ currentUser, token, loginWithFirebase, signupWithFirebase, logout, loading, setToken, setCurrentUser }}>
       {children}
     </AuthContext.Provider>
   );

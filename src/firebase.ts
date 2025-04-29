@@ -1,14 +1,14 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, FacebookAuthProvider, TwitterAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, OAuthProvider } from 'firebase/auth';
 
-// Your Firebase configuration
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIza...", // Replace with your actual Firebase API key
+  apiKey: "AIzaSyC60pTvCppQqKbK3KsebBDwS0A80jfA0no",
   authDomain: "startapp-a9c51.firebaseapp.com",
   projectId: "startapp-a9c51",
-  storageBucket: "startapp-a9c51.appspot.com",
-  messagingSenderId: "107514139787802433993",
-  appId: "1:107514139787802433993:web:your-app-id" // Replace with your actual app ID
+  storageBucket: "startapp-a9c51.firebasestorage.app",
+  messagingSenderId: "1050742832474",
+  appId: "1:1050742832474:web:3fd615e4d2897c05248763"
 };
 
 // Initialize Firebase
@@ -19,13 +19,15 @@ const auth = getAuth(app);
 
 // Setup authentication providers
 const googleProvider = new GoogleAuthProvider();
-const facebookProvider = new FacebookAuthProvider();
-const twitterProvider = new TwitterAuthProvider();
+const appleProvider = new OAuthProvider('apple.com');
 
-// You can configure additional provider settings here
+// Configure provider settings
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
 
-export { auth, googleProvider, facebookProvider, twitterProvider };
+appleProvider.addScope('email');
+appleProvider.addScope('name');
+
+export { auth, googleProvider, appleProvider };
 export default app;

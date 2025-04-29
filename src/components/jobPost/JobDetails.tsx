@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { jobService } from '../../services/jobService';
+import { useAuthContext } from '../../context/AuthContext';
 
 const JobDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { currentUser, token } = useAuthContext();
+  const navigate = useNavigate();
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'image' | 'video' | null>(null);
+  const [contacts, setContacts] = useState<any>(null);
+  const [contactsError, setContactsError] = useState('');
 
   // Demo fields (replace with real job.image/job.video when backend ready)
   const image = (job as any)?.image || null;
@@ -25,6 +30,20 @@ const JobDetails: React.FC = () => {
     };
     fetchJob();
   }, [id]);
+
+  const handleShowContacts = async () => {
+    if (!currentUser || !token) {
+      navigate('/login', { state: { from: `/jobs/${id}` } });
+      return;
+    }
+    setContactsError('');
+    const res = await jobService.getJobContacts(id!, token);
+    if (res && !res.success && res.message) {
+      setContactsError('Please log in to view contacts.');
+    } else {
+      setContacts(res);
+    }
+  };
 
   if (loading) return <div>Loading job details...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
@@ -101,6 +120,17 @@ const JobDetails: React.FC = () => {
       >
         Invest / Support
       </button>
+      <button onClick={handleShowContacts} style={{marginTop: 24, padding: '10px 24px', borderRadius: 8, background: '#1976d2', color: '#fff', fontWeight: 600, fontSize: '1rem', border: 'none', cursor: 'pointer'}}>Show Contacts</button>
+      {contactsError && <div style={{ color: 'red', marginTop: 8 }}>{contactsError}</div>}
+      {contacts && (
+        <div style={{ marginTop: 16, background: '#f7f7f7', borderRadius: 8, padding: 16 }}>
+          <div><b>Email:</b> {contacts.email || '-'}</div>
+          <div><b>Phone:</b> {contacts.phone || '-'}</div>
+          <div><b>WhatsApp:</b> {contacts.whatsapp || '-'}</div>
+          <div><b>Instagram:</b> {contacts.instagram || '-'}</div>
+          <div><b>Facebook:</b> {contacts.facebook || '-'}</div>
+        </div>
+      )}
       {/* Modal for image/video preview */}
       {modalOpen && (
         <div style={{

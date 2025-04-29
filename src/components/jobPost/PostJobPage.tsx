@@ -6,6 +6,7 @@ import { useAuthContext } from '../../context/AuthContext';
 import { useJobContext } from '../../context/JobContext';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import { useNavigate } from 'react-router-dom';
 
 const PostJobPage: React.FC = () => {
   const [error, setError] = useState('');
@@ -18,6 +19,7 @@ const PostJobPage: React.FC = () => {
   const { addNotification } = useNotificationContext();
   const { currentUser } = useAuthContext();
   const { postJob } = useJobContext();
+  const navigate = useNavigate();
 
   const validationSchema = Yup.object({
     title: Yup.string().min(3, 'Title must be at least 3 characters').required('Project title is required'),
@@ -56,6 +58,12 @@ const PostJobPage: React.FC = () => {
       headers: { Authorization: `Bearer ${token}` },
     });
   };
+
+  React.useEffect(() => {
+    if (!currentUser) {
+      navigate('/login', { state: { from: '/post-job' } });
+    }
+  }, [currentUser, navigate]);
 
   return (
     <div className={styles.loginContainer}>

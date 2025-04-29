@@ -77,4 +77,15 @@ export const jobService = {
       return { success: false, message: (err as Error).message };
     }
   },
+  getJobContacts: async (id: string, token: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/jobs/${id}/contacts`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Not authorized');
+      return await res.json();
+    } catch (err) {
+      return { success: false, message: (err as Error).message };
+    }
+  },
 };

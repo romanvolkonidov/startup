@@ -273,9 +273,9 @@ app.get('/api/jobs', async (req, res) => {
   res.json(jobs);
 });
 
-// 2. Create a new job
-app.post('/api/jobs', async (req, res) => {
-  const { title, description, owner, amount, returnPercent, paybackTime, email, phone, whatsapp, instagram, facebook } = req.body;
+// 2. Create a new job (authenticated only)
+app.post('/api/jobs', authenticateToken, async (req, res) => {
+  const { title, description, owner, amount, returnPercent, paybackTime, email, phone, whatsapp, instagram, facebook, image, video } = req.body;
   const newJob = new Job({
     title,
     description,
@@ -289,6 +289,8 @@ app.post('/api/jobs', async (req, res) => {
     whatsapp,
     instagram,
     facebook,
+    image,
+    video
   });
   await newJob.save();
   res.json({ success: true, job: newJob });
@@ -327,6 +329,22 @@ app.post('/api/jobs/:id/save', authenticateToken, async (req, res) => {
   }
   await job.save();
   res.json({ success: true, saved: !alreadySaved, saveCount: job.savedBy.length });
+});
+
+// Get job contact info (protected)
+app.get('/api/jobs/:id/contacts', authenticateToken, async (req, res) => {
+  const job = await Job.findById(req.params.id);
+  if (!job) {
+    return res.status(404).json({ message: 'Job not found' });
+  }
+  // Only return contact fields
+  res.json({
+    email: job.email,
+    phone: job.phone,
+    whatsapp: job.whatsapp,
+    instagram: job.instagram,
+    facebook: job.facebook,
+  });
 });
 
 // Notifications routes

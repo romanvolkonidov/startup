@@ -11,9 +11,17 @@
   background-color: #ffffff;
   padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 400px;
+  transition: all 0.3s ease;
+}
+
+.formContainer h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #333;
+  font-size: 1.8rem;
 }
 
 .formGroup {
@@ -24,14 +32,26 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
+  color: #4a5568;
 }
 
 .formGroup input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid #e2e8f0;
   border-radius: 4px;
   font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: #4a6cf7;
+  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+}
+
+.formGroup input::placeholder {
+  color: #a0aec0;
 }
 
 .forgotPassword {
@@ -39,9 +59,18 @@
   margin-bottom: 1.5rem;
 }
 
-.forgotPassword a {
+.linkButton {
+  background: none;
+  border: none;
   color: #4a6cf7;
-  text-decoration: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.linkButton:hover {
+  color: #3a5cd8;
 }
 
 .loginButton {
@@ -54,6 +83,7 @@
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.3s;
+  font-weight: 600;
 }
 
 .loginButton:hover {
@@ -68,16 +98,26 @@
 .error {
   color: #e53e3e;
   margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(229, 62, 62, 0.1);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.info {
+  color: #38a169;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(56, 161, 105, 0.1);
+  border-radius: 4px;
+  font-size: 0.9rem;
 }
 
 .noAccount {
   margin-top: 1.5rem;
   text-align: center;
-}
-
-.noAccount a {
-  color: #4a6cf7;
-  text-decoration: none;
+  font-size: 0.9rem;
+  color: #718096;
 }
 
 /* Social login styles */
@@ -90,6 +130,8 @@
   margin-bottom: 1rem;
   color: #718096;
   position: relative;
+  font-weight: normal;
+  font-size: 0.9rem;
 }
 
 .socialLoginContainer h4::before,
@@ -124,30 +166,30 @@
   border-radius: 4px;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: opacity 0.3s;
+  transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  font-weight: 600;
 }
 
 .socialButton:hover {
-  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .googleButton {
   background-color: #DB4437;
 }
 
-.facebookButton {
-  background-color: #4267B2;
-}
-
-.twitterButton {
-  background-color: #1DA1F2;
+.appleButton {
+  background-color: #000000;
 }
 
 .socialButton:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
