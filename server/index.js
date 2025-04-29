@@ -364,7 +364,21 @@ app.get('/api/user/saved-jobs', authenticateToken, async (req, res) => {
 // 4. Get job by ID - parametric route
 app.get('/api/jobs/:id', async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id);
+    const jobId = req.params.id;
+    
+    // Validate the job ID before querying
+    const mongoose = require('mongoose');
+    const { ObjectId } = mongoose.Types;
+    
+    if (!jobId || jobId === 'undefined' || !ObjectId.isValid(jobId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid job ID provided' 
+      });
+    }
+    
+    const job = await Job.findById(jobId);
+    
     if (job) {
       const enrichedJob = await enrichJobsWithOwnerInfo(job);
       res.json(enrichedJob);
@@ -379,36 +393,72 @@ app.get('/api/jobs/:id', async (req, res) => {
 
 // 5. Save/Unsave a job post for the current user
 app.post('/api/jobs/:id/save', authenticateToken, async (req, res) => {
-  const jobId = req.params.id;
-  const userId = req.user.id;
-  const job = await Job.findById(jobId);
-  if (!job) return res.status(404).json({ success: false, message: 'Job not found' });
-  const alreadySaved = job.savedBy && job.savedBy.includes(userId);
-  if (alreadySaved) {
-    // Unsave
-    job.savedBy = job.savedBy.filter(id => id.toString() !== userId);
-  } else {
-    // Save
-    job.savedBy = [...(job.savedBy || []), userId];
+  try {
+    const jobId = req.params.id;
+    const userId = req.user.id;
+    
+    // Validate the job ID before querying
+    const mongoose = require('mongoose');
+    const { ObjectId } = mongoose.Types;
+    
+    if (!jobId || jobId === 'undefined' || !ObjectId.isValid(jobId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid job ID provided' 
+      });
+    }
+    
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ success: false, message: 'Job not found' });
+    
+    const alreadySaved = job.savedBy && job.savedBy.includes(userId);
+    if (alreadySaved) {
+      // Unsave
+      job.savedBy = job.savedBy.filter(id => id.toString() !== userId);
+    } else {
+      // Save
+      job.savedBy = [...(job.savedBy || []), userId];
+    }
+    await job.save();
+    res.json({ success: true, saved: !alreadySaved, saveCount: job.savedBy.length });
+  } catch (err) {
+    console.error('Error saving/unsaving job:', err);
+    res.status(500).json({ success: false, message: 'Failed to update job' });
   }
-  await job.save();
-  res.json({ success: true, saved: !alreadySaved, saveCount: job.savedBy.length });
 });
 
 // Get job contact info (protected)
 app.get('/api/jobs/:id/contacts', authenticateToken, async (req, res) => {
-  const job = await Job.findById(req.params.id);
-  if (!job) {
-    return res.status(404).json({ message: 'Job not found' });
+  try {
+    const jobId = req.params.id;
+    
+    // Validate the job ID before querying
+    const mongoose = require('mongoose');
+    const { ObjectId } = mongoose.Types;
+    
+    if (!jobId || jobId === 'undefined' || !ObjectId.isValid(jobId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid job ID provided' 
+      });
+    }
+    
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+    // Only return contact fields
+    res.json({
+      email: job.email,
+      phone: job.phone,
+      whatsapp: job.whatsapp,
+      instagram: job.instagram,
+      facebook: job.facebook,
+    });
+  } catch (err) {
+    console.error('Error fetching job contacts:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch job contact information' });
   }
-  // Only return contact fields
-  res.json({
-    email: job.email,
-    phone: job.phone,
-    whatsapp: job.whatsapp,
-    instagram: job.instagram,
-    facebook: job.facebook,
-  });
 });
 
 // Notifications routes
@@ -500,6 +550,18 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
 app.get('/api/users/:id', authenticateToken, async (req, res) => {
   try {
     const userId = req.params.id;
+    
+    // Validate the user ID before querying
+    const mongoose = require('mongoose');
+    const { ObjectId } = mongoose.Types;
+    
+    if (!userId || userId === 'undefined' || !ObjectId.isValid(userId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid user ID provided' 
+      });
+    }
+    
     const user = await User.findById(userId);
     
     if (!user) {
