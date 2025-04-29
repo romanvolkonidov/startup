@@ -4,6 +4,7 @@ import EditJobModal from '../jobPost/EditJobModal';
 import { useJobContext } from '../../context/JobContext';
 import { useAuthContext } from '../../context/AuthContext';
 import { jobService } from '../../services/jobService';
+import { userService } from '../../services/userService';
 
 interface JobCardProps {
   job: {
@@ -99,17 +100,13 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
     setContactsVisible(true);
     
     try {
-      // Using jobService through import would be ideal
-      const response = await fetch(`/api/jobs/${job.id}/contacts`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Use jobService instead of direct fetch for correct API URL handling
+      const response = await jobService.getJobContacts(job.id, token);
       
-      const data = await response.json();
-      
-      if (response.ok) {
-        setContacts(data);
+      if (response.success === false) {
+        setContactsError(response.message || 'Failed to load contacts');
       } else {
-        setContactsError(data.message || 'Failed to load contacts');
+        setContacts(response);
       }
     } catch (err) {
       setContactsError('An error occurred. Please try again.');
@@ -137,17 +134,13 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
       // Get the user ID from the job owner
       const ownerId = job.ownerId || job.owner;
       
-      // Fetch the user profile
-      const response = await fetch(`/api/users/${ownerId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Fetch the user profile using userService
+      const response = await userService.getUserById(ownerId, token);
       
-      const data = await response.json();
-      
-      if (response.ok) {
-        setOwnerProfile(data);
+      if (response.success === false) {
+        setProfileError(response.message || 'Failed to load profile');
       } else {
-        setProfileError(data.message || 'Failed to load profile');
+        setOwnerProfile(response);
       }
     } catch (err) {
       setProfileError('An error occurred while loading profile.');

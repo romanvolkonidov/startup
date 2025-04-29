@@ -22,22 +22,31 @@ interface Job {
 
 interface JobContextType {
   jobs: Job[];
+  myJobs: Job[]; // Add myJobs state
   loading: boolean;
+  myJobsLoading: boolean; // Add loading state for myJobs
   error: string;
+  myJobsError: string; // Add error state for myJobs
   fetchJobs: () => Promise<void>;
+  fetchMyJobs: () => Promise<void>; // Add fetchMyJobs function
   postJob: (job: Partial<Job>) => Promise<any>;
   updateJobInList: (job: Job) => void;
+  updateMyJobInList: (job: Job) => void; // Add updateMyJobInList function
   savedJobs: Job[];
   fetchSavedJobs: () => Promise<void>;
   saveJob: (jobId: string) => Promise<any>;
+  deleteMyJob: (jobId: string) => Promise<any>; // Add deleteMyJob function
 }
 
 export const JobContext = createContext<JobContextType | undefined>(undefined);
 
 export const JobProvider = ({ children }: { children: ReactNode }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [myJobs, setMyJobs] = useState<Job[]>([]); // Initialize myJobs state
   const [loading, setLoading] = useState(false);
+  const [myJobsLoading, setMyJobsLoading] = useState(false); // Initialize myJobsLoading state
   const [error, setError] = useState('');
+  const [myJobsError, setMyJobsError] = useState(''); // Initialize myJobsError state
   const { token } = useAuthContext();
   const [savedJobs, setSavedJobs] = useState<Job[]>([]);
 
@@ -50,17 +59,36 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   };
 
+  const fetchMyJobs = async () => {
+    if (!token) return;
+    setMyJobsLoading(true);
+    setMyJobsError('');
+    const res = await jobService.getMyJobs(token);
+    if (Array.isArray(res)) setMyJobs(res);
+    else setMyJobsError(res.message || 'Failed to fetch your jobs');
+    setMyJobsLoading(false);
+  };
+
   const postJob = async (job: Partial<Job>) => {
     setError('');
     if (!token) return { success: false, message: 'Not authenticated' };
     const res = await jobService.postJob({ ...job, owner: 'You' }, token);
-    if (res.success) fetchJobs();
+    if (res.success) {
+      fetchJobs();
+      fetchMyJobs(); // Also fetch my jobs after posting
+    }
     else setError(res.message || 'Failed to post job');
     return res;
   };
 
   const updateJobInList = (updatedJob: Job) => {
     setJobs(prev => prev.map(j => j.id === updatedJob.id ? { ...j, ...updatedJob } : j));
+  };
+
+  const updateMyJobInList = (updatedJob: Job) => {
+    setMyJobs(prev => prev.map(j => j.id === updatedJob.id ? { ...j, ...updatedJob } : j));
+    // Also update in the main jobs list if present
+    updateJobInList(updatedJob);
   };
 
   const fetchSavedJobs = async () => {
@@ -77,14 +105,49 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
     return res;
   };
 
+  const deleteMyJob = async (jobId: string) => {
+    if (!token) return { success: false, message: 'Not authenticated' };
+    const res = await jobService.deleteJob(jobId);
+    if (res.success) {
+      // Remove from myJobs list
+      setMyJobs(prev => prev.filter(job => job.id !== jobId));
+      // Remove from main jobs list if present
+      setJobs(prev => prev.filter(job => job.id !== jobId));
+      // Remove from savedJobs list if present
+      setSavedJobs(prev => prev.filter(job => job.id !== jobId));
+    }
+    return res;
+  };
+
   useEffect(() => {
     fetchJobs();
-    if (token) fetchSavedJobs();
+    if (token) {
+      fetchSavedJobs();
+      fetchMyJobs(); // Fetch my jobs when context is loaded
+    }
     // eslint-disable-next-line
   }, [token]);
 
+  const contextValue = useMemo(() => ({ 
+    jobs, 
+    myJobs, 
+    loading, 
+    myJobsLoading, 
+    error, 
+    myJobsError,
+    fetchJobs, 
+    fetchMyJobs,
+    postJob, 
+    updateJobInList, 
+    updateMyJobInList,
+    savedJobs, 
+    fetchSavedJobs, 
+    saveJob,
+    deleteMyJob
+  }), [jobs, myJobs, loading, myJobsLoading, error, myJobsError, savedJobs]);
+
   return (
-    <JobContext.Provider value={useMemo(() => ({ jobs, loading, error, fetchJobs, postJob, updateJobInList, savedJobs, fetchSavedJobs, saveJob }), [jobs, loading, error, savedJobs])}>
+    <JobContext.Provider value={contextValue}>
       {children}
     </JobContext.Provider>
   );
