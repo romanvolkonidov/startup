@@ -1,20 +1,68 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import styles from '../../styles/components/Form.module.css';
 import buttonStyles from '../../styles/components/Button.module.css';
+import { useAuthContext } from '../../context/AuthContext';
+import { useNotificationContext } from '../../context/NotificationContext';
 
 const ProfilePage: React.FC = () => {
-  // Dummy user data for demonstration
-  const user = {
-    name: 'Jane Doe',
-    email: 'jane.doe@email.com',
-    bio: 'Startup founder. Passionate about tech, sustainability, and innovation.',
-    joined: 'January 2024',
-    profilePicture: '', // Add profilePicture field
-  };
-
-  // State for previewing uploaded image (for demonstration)
-  const [preview, setPreview] = useState<string | null>(user.profilePicture || null);
+  const { currentUser, token } = useAuthContext();
+  const { addNotification } = useNotificationContext();
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+  
+  // User data with default values
+  const [userData, setUserData] = useState({
+    name: currentUser?.name || 'User',
+    email: currentUser?.email || '',
+    bio: currentUser?.bio || 'No bio yet.',
+    phone: currentUser?.phone || '',
+    location: currentUser?.location || '',
+    website: currentUser?.website || '',
+    joined: currentUser?.joined || 'January 2024',
+  });
+  
+  // State for profile image
+  const [profilePicture, setProfilePicture] = useState<string | null>(currentUser?.profilePicture || null);
+  const [previewImage, setPreviewImage] = useState<string | null>(currentUser?.profilePicture || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch user data when component mounts
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!currentUser || !token) return;
+      
+      try {
+        const response = await fetch('/api/user/profile', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          setUserData({
+            name: userData.name || currentUser.name || 'User',
+            email: userData.email || currentUser.email || '',
+            bio: userData.bio || 'No bio yet.',
+            phone: userData.phone || '',
+            location: userData.location || '',
+            website: userData.website || '',
+            joined: userData.joined || 'January 2024',
+          });
+          
+          if (userData.profilePicture) {
+            setProfilePicture(userData.profilePicture);
+            setPreviewImage(userData.profilePicture);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch user profile:', err);
+      }
+    };
+    
+    fetchUserData();
+  }, [currentUser, token]);
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -25,52 +73,311 @@ const ProfilePage: React.FC = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreview(reader.result as string);
+        setPreviewImage(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
+  };
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setUserData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    
+    if (!currentUser || !token) {
+      setError('You must be logged in to update your profile');
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      // Handle profile picture upload if changed
+      let profilePictureUrl = profilePicture;
+      if (previewImage !== profilePicture && previewImage) {
+        const formData = new FormData();
+        // If previewImage is a base64 string, convert to file
+        const byteString = atob(previewImage.split(',')[1]);
+        const mimeString = previewImage.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        
+        const blob = new Blob([ab], { type: mimeString });
+        const file = new File([blob], "profile-picture.jpg", { type: mimeString });
+        
+        formData.append('image', file);
+        
+        const uploadResponse = await fetch('/api/upload/profile-picture', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json();
+          profilePictureUrl = uploadData.image;
+        } else {
+          throw new Error('Failed to upload profile picture');
+        }
+      }
+      
+      // Update user profile with all data
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json', 
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...userData,
+          profilePicture: profilePictureUrl,
+        }),
+      });
+      
+      if (response.ok) {
+        setSuccess('Profile updated successfully!');
+        setProfilePicture(previewImage);
+        addNotification({ message: 'Profile updated successfully!', type: 'success' });
+        setIsEditing(false);
+      } else {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to update profile');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while updating your profile');
+      addNotification({ message: err.message || 'Failed to update profile', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setPreviewImage(profilePicture);
+    setUserData({
+      name: currentUser?.name || 'User',
+      email: currentUser?.email || '',
+      bio: currentUser?.bio || 'No bio yet.',
+      phone: currentUser?.phone || '',
+      location: currentUser?.location || '',
+      website: currentUser?.website || '',
+      joined: currentUser?.joined || 'January 2024',
+    });
   };
 
   return (
     <div className={styles.loginContainer}>
       <div className={styles.loginBox} style={{ maxWidth: 500 }}>
         <h1 className={styles.brandTitle}>Profile</h1>
-        <div style={{ margin: '24px 0 16px 0', textAlign: 'center' }}>
-          <div
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              background: preview
-                ? `url(${preview}) center/cover no-repeat`
-                : 'linear-gradient(135deg, #1e88e5 60%, #43a047 100%)',
-              color: '#fff',
-              fontSize: 36,
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 12px auto',
-              cursor: 'pointer',
-              border: preview ? '2px solid #1e88e5' : undefined,
-            }}
-            title="Click to change profile picture"
-            onClick={handleImageClick}
-          >
-            {!preview && user.name[0]}
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-              onChange={handleFileChange}
+        
+        {isEditing ? (
+          // Edit mode with form
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div style={{ margin: '24px 0 16px 0', textAlign: 'center' }}>
+              <div
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: '50%',
+                  background: previewImage
+                    ? `url(${previewImage}) center/cover no-repeat`
+                    : 'linear-gradient(135deg, #1e88e5 60%, #43a047 100%)',
+                  color: '#fff',
+                  fontSize: 36,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 12px auto',
+                  cursor: 'pointer',
+                  border: previewImage ? '2px solid #1e88e5' : undefined,
+                }}
+                title="Click to change profile picture"
+                onClick={handleImageClick}
+              >
+                {!previewImage && (userData.name[0] || 'U')}
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  onChange={handleFileChange}
+                />
+              </div>
+              <div style={{ color: '#757575', fontSize: 13, marginTop: 4 }}>Click to upload profile picture</div>
+            </div>
+            
+            <label className={styles.label} htmlFor="name">Name</label>
+            <input 
+              className={styles.input}
+              id="name"
+              name="name"
+              value={userData.name}
+              onChange={handleInputChange}
+              required
             />
-          </div>
-          <h2 style={{ margin: 0, color: '#222', fontWeight: 600 }}>{user.name}</h2>
-          <div style={{ color: '#757575', fontSize: 15 }}>{user.email}</div>
-        </div>
-        <div style={{ color: '#333', fontSize: '1.05rem', marginBottom: 16 }}>{user.bio}</div>
-        <div style={{ color: '#8e24aa', fontWeight: 500, fontSize: 14 }}>Joined {user.joined}</div>
+            
+            <label className={styles.label} htmlFor="email">Email</label>
+            <input 
+              className={styles.input}
+              id="email"
+              type="email"
+              name="email"
+              value={userData.email}
+              onChange={handleInputChange}
+              required
+              disabled
+            />
+            
+            <label className={styles.label} htmlFor="bio">Bio</label>
+            <textarea 
+              className={styles.input}
+              id="bio"
+              name="bio"
+              value={userData.bio}
+              onChange={handleInputChange}
+              rows={4}
+              style={{ resize: 'vertical' }}
+            />
+            
+            <label className={styles.label} htmlFor="phone">Phone</label>
+            <input 
+              className={styles.input}
+              id="phone"
+              name="phone"
+              value={userData.phone}
+              onChange={handleInputChange}
+            />
+            
+            <label className={styles.label} htmlFor="location">Location</label>
+            <input 
+              className={styles.input}
+              id="location"
+              name="location"
+              value={userData.location}
+              onChange={handleInputChange}
+            />
+            
+            <label className={styles.label} htmlFor="website">Website</label>
+            <input 
+              className={styles.input}
+              id="website"
+              name="website"
+              value={userData.website}
+              onChange={handleInputChange}
+            />
+            
+            {error && <div style={{ color: '#e65100', fontSize: '0.95rem', marginTop: 8 }}>{error}</div>}
+            {success && <div style={{ color: '#43a047', fontSize: '0.95rem', marginTop: 8 }}>{success}</div>}
+            
+            <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+              <button 
+                type="submit" 
+                className={buttonStyles.primaryButton}
+                disabled={loading}
+              >
+                {loading ? 'Saving...' : 'Save Profile'}
+              </button>
+              <button 
+                type="button" 
+                onClick={cancelEditing}
+                style={{
+                  background: '#f5f5f5',
+                  color: '#333',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '12px 0',
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  flex: 1,
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          // View mode
+          <>
+            <div style={{ margin: '24px 0 16px 0', textAlign: 'center' }}>
+              <div
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: '50%',
+                  background: profilePicture
+                    ? `url(${profilePicture}) center/cover no-repeat`
+                    : 'linear-gradient(135deg, #1e88e5 60%, #43a047 100%)',
+                  color: '#fff',
+                  fontSize: 36,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 12px auto',
+                }}
+              >
+                {!profilePicture && (userData.name[0] || 'U')}
+              </div>
+              <h2 style={{ margin: 0, color: '#222', fontWeight: 600 }}>{userData.name}</h2>
+              <div style={{ color: '#757575', fontSize: 15 }}>{userData.email}</div>
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <h3 style={{ color: '#1976d2', margin: '0 0 8px 0', fontWeight: 600, fontSize: '1.1rem' }}>Bio</h3>
+              <div style={{ color: '#333', fontSize: '1.05rem' }}>{userData.bio}</div>
+            </div>
+            
+            {userData.phone && (
+              <div style={{ marginBottom: 12 }}>
+                <h3 style={{ color: '#1976d2', margin: '0 0 4px 0', fontWeight: 600, fontSize: '1rem' }}>Phone</h3>
+                <div style={{ color: '#333' }}>{userData.phone}</div>
+              </div>
+            )}
+            
+            {userData.location && (
+              <div style={{ marginBottom: 12 }}>
+                <h3 style={{ color: '#1976d2', margin: '0 0 4px 0', fontWeight: 600, fontSize: '1rem' }}>Location</h3>
+                <div style={{ color: '#333' }}>{userData.location}</div>
+              </div>
+            )}
+            
+            {userData.website && (
+              <div style={{ marginBottom: 16 }}>
+                <h3 style={{ color: '#1976d2', margin: '0 0 4px 0', fontWeight: 600, fontSize: '1rem' }}>Website</h3>
+                <a href={userData.website.startsWith('http') ? userData.website : `https://${userData.website}`} 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   style={{ color: '#8e24aa', textDecoration: 'none' }}
+                >
+                  {userData.website}
+                </a>
+              </div>
+            )}
+            
+            <div style={{ color: '#8e24aa', fontWeight: 500, fontSize: 14, marginBottom: 24 }}>Joined {userData.joined}</div>
+            
+            <button 
+              onClick={() => setIsEditing(true)} 
+              className={buttonStyles.primaryButton} 
+              style={{
+                background: 'linear-gradient(90deg, #43a047 60%, #1e88e5 100%)',
+              }}
+            >
+              Edit Profile
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

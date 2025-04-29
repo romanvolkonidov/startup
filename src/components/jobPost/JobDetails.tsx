@@ -49,6 +49,8 @@ const JobDetails: React.FC = () => {
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
   if (!job) return null;
 
+  const isOwner = currentUser && currentUser.id === job.owner;
+
   return (
     <div style={{
       maxWidth: 600,
@@ -103,32 +105,55 @@ const JobDetails: React.FC = () => {
           Payback Time: <span style={{ color: '#222' }}>{job.paybackTime}</span>
         </div>
       )}
-      <button
+      
+      {/* Edit button for owners */}
+      {isOwner && (
+        <button
+          style={{
+            background: 'linear-gradient(90deg, #8e24aa 60%, #e65100 100%)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            padding: '10px 24px',
+            fontWeight: 600,
+            fontSize: '1rem',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(142, 36, 170, 0.10)',
+            transition: 'background 0.2s',
+            marginRight: 16,
+          }}
+          onClick={() => navigate(`/edit-job/${id}`)}
+        >
+          Edit Project
+        </button>
+      )}
+      
+      {/* Contacts button */}
+      <button 
+        onClick={handleShowContacts} 
         style={{
-          background: 'linear-gradient(90deg, #ff9800 60%, #8e24aa 100%)',
-          color: '#fff',
-          border: 'none',
-          borderRadius: 8,
-          padding: '12px 32px',
-          fontWeight: 600,
-          fontSize: '1.1rem',
+          background: 'linear-gradient(90deg, #1976d2 60%, #43a047 100%)', 
+          color: '#fff', 
+          border: 'none', 
+          borderRadius: 8, 
+          padding: '10px 24px', 
+          fontWeight: 600, 
+          fontSize: '1rem', 
           cursor: 'pointer',
-          boxShadow: '0 2px 8px rgba(255, 152, 0, 0.10)',
-          transition: 'background 0.2s',
+          boxShadow: '0 2px 8px rgba(25, 118, 210, 0.10)',
         }}
-        onClick={() => window.location.href = '/invest'}
       >
-        Invest / Support
+        Show Contacts
       </button>
-      <button onClick={handleShowContacts} style={{marginTop: 24, padding: '10px 24px', borderRadius: 8, background: '#1976d2', color: '#fff', fontWeight: 600, fontSize: '1rem', border: 'none', cursor: 'pointer'}}>Show Contacts</button>
+      
       {contactsError && <div style={{ color: 'red', marginTop: 8 }}>{contactsError}</div>}
       {contacts && (
         <div style={{ marginTop: 16, background: '#f7f7f7', borderRadius: 8, padding: 16 }}>
           <div><b>Email:</b> {contacts.email || '-'}</div>
-          <div><b>Phone:</b> {contacts.phone || '-'}</div>
-          <div><b>WhatsApp:</b> {contacts.whatsapp || '-'}</div>
-          <div><b>Instagram:</b> {contacts.instagram || '-'}</div>
-          <div><b>Facebook:</b> {contacts.facebook || '-'}</div>
+          {contacts.phone && <div><b>Phone:</b> {contacts.phone}</div>}
+          {contacts.whatsapp && <div><b>WhatsApp:</b> {contacts.whatsapp}</div>}
+          {contacts.instagram && <div><b>Instagram:</b> {contacts.instagram}</div>}
+          {contacts.facebook && <div><b>Facebook:</b> {contacts.facebook}</div>}
         </div>
       )}
       {/* Modal for image/video preview */}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import EditJobModal from '../jobPost/EditJobModal';
 import { useJobContext } from '../../context/JobContext';
 import { useAuthContext } from '../../context/AuthContext';
@@ -22,10 +23,14 @@ const JobCard: React.FC<JobCardProps> = React.memo(({ job }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'image' | 'video' | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [contactsVisible, setContactsVisible] = useState(false);
   const { updateJobInList } = useJobContext?.() || {};
   const { savedJobs, saveJob } = useJobContext?.() || {};
-  const { currentUser } = useAuthContext();
+  const { currentUser, token } = useAuthContext();
   const [saving, setSaving] = useState(false);
+  const [contacts, setContacts] = useState<any>(null);
+  const [contactsError, setContactsError] = useState('');
+  const navigate = useNavigate();
 
   // Demo fields (replace with real job.image/job.video when backend ready)
   const image = (job as any).image || null;
@@ -42,6 +47,39 @@ const JobCard: React.FC<JobCardProps> = React.memo(({ job }) => {
     setSaving(true);
     await saveJob?.(job.id);
     setSaving(false);
+  };
+
+  const handleShowContacts = async () => {
+    if (!currentUser || !token) {
+      navigate('/login', { state: { from: `/jobs/${job.id}` } });
+      return;
+    }
+    
+    setContactsError('');
+    setContactsVisible(true);
+    
+    try {
+      // Using jobService through import would be ideal
+      const response = await fetch(`/api/jobs/${job.id}/contacts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setContacts(data);
+      } else {
+        setContactsError(data.message || 'Failed to load contacts');
+      }
+    } catch (err) {
+      setContactsError('An error occurred. Please try again.');
+    }
+  };
+
+  // Function to close contacts section
+  const closeContacts = () => {
+    setContactsVisible(false);
+    setContacts(null);
   };
 
   return (
@@ -103,6 +141,28 @@ const JobCard: React.FC<JobCardProps> = React.memo(({ job }) => {
         <span style={{ color: '#757575' }}>By {job.owner}</span>
         <span style={{ color: '#43a047', fontWeight: 500 }}>Posted {job.postedAt}</span>
       </div>
+      
+      {contactsVisible && contacts && (
+        <div style={{ marginTop: 16, background: '#f7f7f7', borderRadius: 8, padding: 16, position: 'relative' }}>
+          <button 
+            style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#e65100' }}
+            onClick={closeContacts}
+          >
+            &times;
+          </button>
+          <h4 style={{ margin: '0 0 12px 0', color: '#1976d2' }}>Contact Information</h4>
+          <div><b>Email:</b> {contacts.email || '-'}</div>
+          {contacts.phone && <div><b>Phone:</b> {contacts.phone}</div>}
+          {contacts.whatsapp && <div><b>WhatsApp:</b> {contacts.whatsapp}</div>}
+          {contacts.instagram && <div><b>Instagram:</b> {contacts.instagram}</div>}
+          {contacts.facebook && <div><b>Facebook:</b> {contacts.facebook}</div>}
+        </div>
+      )}
+      
+      {contactsError && (
+        <div style={{ color: 'red', marginTop: 12, fontSize: 14 }}>{contactsError}</div>
+      )}
+      
       <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
         {/* Heart (save) button */}
         <button
@@ -132,36 +192,46 @@ const JobCard: React.FC<JobCardProps> = React.memo(({ job }) => {
             {saveCount} saved
           </span>
         )}
+        
+        {/* Only show Edit button to owners */}
+        {isOwner && (
+          <button
+            style={{
+              background: 'linear-gradient(90deg, #8e24aa 60%, #e65100 100%)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 16px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(142, 36, 170, 0.10)',
+              transition: 'background 0.2s',
+              marginLeft: 'auto',
+            }}
+            onClick={() => setEditModalOpen(true)}
+          >
+            Edit
+          </button>
+        )}
+        
+        {/* Contacts button - available to everyone */}
         <button
           style={{
-            background: 'linear-gradient(90deg, #8e24aa 60%, #e65100 100%)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 6,
-            padding: '6px 16px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(142, 36, 170, 0.10)',
-            transition: 'background 0.2s',
-          }}
-          onClick={() => setEditModalOpen(true)}
-        >
-          Edit
-        </button>
-        <button
-          style={{
-            background: 'linear-gradient(90deg, #ff9800 60%, #8e24aa 100%)',
+            background: 'linear-gradient(90deg, #1976d2 60%, #43a047 100%)',
             color: '#fff',
             border: 'none',
             borderRadius: 6,
             padding: '8px 20px',
             fontWeight: 600,
             cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(255, 152, 0, 0.10)',
+            boxShadow: '0 2px 8px rgba(25, 118, 210, 0.10)',
             transition: 'background 0.2s',
+            marginLeft: isOwner ? '8px' : 'auto',
           }}
+          onClick={handleShowContacts}
+          disabled={contactsVisible}
         >
-          Invest / Support
+          View Contacts
         </button>
       </div>
       {/* Modal for image/video preview */}
