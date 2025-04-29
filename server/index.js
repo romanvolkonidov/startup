@@ -14,13 +14,12 @@ const PORT = process.env.PORT || 5000;
 
 // Firebase Admin SDK Initialization
 try {
-  // Production configuration with environment variables
   admin.initializeApp({
     credential: admin.credential.cert({
-      projectId: "startapp-a9c51",
-      clientEmail: "firebase-adminsdk-fbsvc@startapp-a9c51.iam.gserviceaccount.com",
-      privateKey: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCnrml98ZmDNXY0\nMzDqYqBbidcGHX9ITa5vrftTH6gu2xrO315rA8qJ5KNTBHePhXTb0VKZbb+WT+F7\n/W6aV8F7t3Dbl1YLVbrWNxj+nzDXgg2XzkJkgZ4MIUp5aN6X/R3ISppZIoz75WAw\nTtYlfT/glI88Acam6CvKGxadimw0kKWSFWpZEgkVBUj8WlsddUlYpG1kvr2xq32D\nI+vglW0UkX8qhfnTV9BuuCbhr/IRiZDFBrb46Bxv2RTEykBZTb7bODDniLSCc/lM\nDQIRcWSre4fHWGy+ViRwgeVJJfxUA+fPqkuae2Q0c17lw/HPKE4H8mg6RUHn0Jn/\n8nvKLrHLAgMBAAECggEAH/+yJPUmiPn6UTLVqlzg4icXUBTv9cHRQIGwnOfFJg/s\n+T56G6zxCUiG/HA1Sr+6kbpL63icn5gl3Q37fduyUiQrFtS1+FrHWVrRW8HQRcgN\nRQN4+wobOZBe0HV5SQLmHJNUCh+ETQu0Q/O/fQ7+UiK3hMmH+dEDjkGGGtFQHeWP\nKXNhMQ5KIj3X7bKAbAAlscl+McERBbLUwtngWZOQoMkWROYrKDjfrN7meoRbHRdf\nWS6n3mvRwrcXOP0a9GrmyNjl6c0VRxr8PDXh9+weV5bgmO6ulmVrJxq3cct3w4p+\nHv8HWhsXfwpy7GlD1E76eHfDgX+17CykbdvvHNFN9QKBgQDkJdlQbMRbHTI1oW3u\nTmdUJLJebQNwjkLr2GpV6OpWnF1vICeVsEB09jcdlHVodx/uXgmLUbYF0jY29kL6\noAQXG2dg0OlcxXE2yaT4e/8YJvxpKoWQ0Gic6Q6RE8a88EZEpJNYJEdhxCOFvApm\np7L2SBjwpiuLtJCWnjcQVayabQKBgQC8JtfB79W0bO4fVDNmbB1OTBCZYF2bf/QU\nJ8JaUhqKCucgoZZdC/MzRi24Cj7/RbiQwbBGviNQ5C04V1GCwLC5fboDz3NXnJT5\nxcyhY3ViZSINRMobqL3F/ano03VsylvPniUT9t1Mm1GzlYh0AHU8Fg/F2RPmaGr5\n7MXj8VzaFwKBgDk6QTuKPOq59Rk8x+1p30Nc/RzwbVdzZ9fu7iVkijt1d35ja2qB\nznlINWUHEzhEAU9yaSR4N5dYNl8tAHoLX1tIdXL0lETABfj/NZFa0Q8G4HOkxeIg\nVM1fLFc5xbUo9AdN3OPUHc+pOlvWYimD0UEzroXWuL+PaGFPiHJhey01AoGAZZT3\nEe7hy0qweVulcJvYaqhoodZEU6sOZT9eEBOZ3oOqa5SyMMQ95qXyExX9EydaUVUx\nTdBkEs1OmMeT62sLPuphXqNHG7sfN4cSRuQCwT/m1ZEZKTu+UcH1VQ2trTHHxd0V\nGaVDr5N/1dxa0n5YzTsAAwqDUvd3Ij4yTTHHtrsCgYEAzrtJCwN8sbm3P3qcUXw4\nlB2J4CDX7jeqaT5lPgRFQsgWEMDAnwHz8MO9JzfECixUIkRkwlnF0mUkVXQTD97O\n9kggQVbqMkKeZHvwnT2IAse6d+OV9QwAgu5SGAGGma7a+968l6c8bcM8vwbfXdir\nX6rCS62Es+pEUAGc+LGP5yM=\n-----END PRIVATE KEY-----\n"
-    })
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
   });
   console.log('Firebase Admin SDK initialized successfully');
 } catch (error) {
