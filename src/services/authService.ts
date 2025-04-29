@@ -10,7 +10,7 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider, appleProvider } from '../firebase';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'https://startup-bp55.onrender.com/api';
 
 // Helper function to extract meaningful error messages from Firebase errors
 const getFirebaseErrorMessage = (error: unknown): string => {
