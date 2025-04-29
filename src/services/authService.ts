@@ -4,11 +4,43 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   sendPasswordResetEmail,
-  updateProfile 
+  updateProfile,
+  AuthError,
+  AuthErrorCodes
 } from 'firebase/auth';
 import { auth, googleProvider, appleProvider } from '../firebase';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// Helper function to extract meaningful error messages from Firebase errors
+const getFirebaseErrorMessage = (error: unknown): string => {
+  if (error && typeof error === 'object' && 'code' in error) {
+    const authError = error as AuthError;
+    
+    // Handle specific error codes with user-friendly messages
+    switch(authError.code) {
+      case 'auth/email-already-in-use':
+        return 'This email is already registered. Try logging in instead.';
+      case 'auth/user-not-found':
+        return 'No account found with this email. Please check your email or sign up.';
+      case 'auth/wrong-password':
+        return 'Incorrect password. Please try again or reset your password.';
+      case 'auth/invalid-credential':
+        return 'Invalid login credentials. Please check your email and password.';
+      case 'auth/too-many-requests':
+        return 'Too many unsuccessful login attempts. Please try again later.';
+      case 'auth/popup-closed-by-user':
+        return 'Sign-in was canceled because the popup was closed.';
+      case 'auth/popup-blocked':
+        return 'Sign-in popup was blocked by your browser. Please allow popups for this site.';
+      case 'auth/operation-not-allowed':
+        return 'This authentication method is not enabled. Please contact support.';
+      default:
+        return authError.message || 'Authentication failed. Please try again.';
+    }
+  }
+  return 'An unexpected error occurred. Please try again.';
+};
 
 export const authService = {
   loginWithFirebase: async (email: string, password: string) => {
@@ -18,7 +50,7 @@ export const authService = {
       return await handleFirebaseAuth(idToken);
     } catch (error) {
       console.error('Firebase login error:', error);
-      return { success: false, message: 'Failed to log in with Firebase' };
+      return { success: false, message: getFirebaseErrorMessage(error) };
     }
   },
   signupWithFirebase: async (email: string, password: string, name: string) => {
@@ -26,14 +58,13 @@ export const authService = {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       const user = result.user;
       if (user && name) {
-        // Use the imported updateProfile function instead of a method on user
         await updateProfile(user, { displayName: name });
       }
       const idToken = await user.getIdToken();
       return await handleFirebaseAuth(idToken);
     } catch (error) {
       console.error('Firebase signup error:', error);
-      return { success: false, message: 'Failed to sign up with Firebase' };
+      return { success: false, message: getFirebaseErrorMessage(error) };
     }
   },
   sendFirebasePasswordReset: async (email: string) => {
@@ -42,7 +73,7 @@ export const authService = {
       return { success: true };
     } catch (error) {
       console.error('Firebase password reset error:', error);
-      return { success: false, message: 'Failed to send password reset email' };
+      return { success: false, message: getFirebaseErrorMessage(error) };
     }
   },
   getMe: async (token: string) => {
@@ -53,7 +84,8 @@ export const authService = {
       if (!res.ok) return { success: false };
       return await res.json();
     } catch (error) {
-      return { success: false };
+      console.error('Get user profile error:', error);
+      return { success: false, message: 'Failed to fetch user profile' };
     }
   },
   signInWithGoogle: async () => {
@@ -63,7 +95,7 @@ export const authService = {
       return await handleFirebaseAuth(idToken);
     } catch (error) {
       console.error('Google sign-in error:', error);
-      return { success: false, message: 'Failed to sign in with Google' };
+      return { success: false, message: getFirebaseErrorMessage(error) };
     }
   },
   signInWithApple: async () => {
@@ -73,7 +105,7 @@ export const authService = {
       return await handleFirebaseAuth(idToken);
     } catch (error) {
       console.error('Apple sign-in error:', error);
-      return { success: false, message: 'Failed to sign in with Apple' };
+      return { success: false, message: getFirebaseErrorMessage(error) };
     }
   }
 };
@@ -90,9 +122,17 @@ async function handleFirebaseAuth(idToken: string) {
         token: data.token
       };
     } else {
+      console.error('Server authentication failed:', data);
       return { success: false, message: data.message || 'Authentication failed' };
     }
-  } catch (error: unknown) {
-    return { success: false, message: 'Authentication server error' };
+  } catch (error) {
+    console.error('Authentication server error:', error);
+    if (axios.isAxiosError(error) && error.response) {
+      return { 
+        success: false, 
+        message: error.response.data?.message || `Server error: ${error.response.status}` 
+      };
+    }
+    return { success: false, message: 'Cannot connect to authentication server' };
   }
 }
