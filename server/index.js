@@ -1,4 +1,4 @@
-// Basic Express server setup for StartUp Connect API
+// Basic Express server setup for StartApp Connect API
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -57,7 +57,7 @@ app.options('*', cors());
 app.use(express.json());
 
 // MongoDB Atlas connection
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://romanvolkonidov:KXf39eGbFYVFEKL6@startup.8oukgfu.mongodb.net/?retryWrites=true&w=majority&appName=StartUp';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://romanvolkonidov:KXf39eGbFYVFEKL6@startup.8oukgfu.mongodb.net/?retryWrites=true&w=majority&appName=StartApp';
 
 mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
@@ -129,10 +129,10 @@ async function sendVerificationEmail(email, name, token) {
   
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_USER || 'noreply@startupconnect.com',
+      from: process.env.SMTP_USER || 'noreply@startapp.com',
       to: email,
-      subject: 'Verify your email for StartUp Connect',
-      html: `<p>Hello ${name},</p><p>Thank you for registering at StartUp Connect.</p><p>Please verify your email by clicking <a href="${verifyUrl}">here</a>.</p><p>If the link doesn't work, copy and paste this URL into your browser: ${verifyUrl}</p><p>This link will expire in 24 hours.</p>`
+      subject: 'Verify your email for StartApp',
+      html: `<p>Hello ${name},</p><p>Thank you for registering at StartApp.</p><p>Please verify your email by clicking <a href="${verifyUrl}">here</a>.</p><p>If the link doesn't work, copy and paste this URL into your browser: ${verifyUrl}</p><p>This link will expire in 24 hours.</p>`
     });
     console.log(`Verification email sent successfully to ${email}`);
   } catch (error) {
@@ -266,11 +266,58 @@ app.get('/api/protected', authenticateToken, (req, res) => {
   res.json({ message: 'This is a protected route', user: req.user });
 });
 
+// Add this function to get owner info when retrieving jobs
+async function enrichJobsWithOwnerInfo(jobs, minimal = false) {
+  // Convert to array if single object
+  const jobArray = Array.isArray(jobs) ? jobs : [jobs];
+  const enrichedJobs = [];
+  
+  for (const job of jobArray) {
+    let jobObj = job;
+    if (job.toObject) {
+      jobObj = job.toObject(); // Convert Mongoose document to plain object if needed
+    } else if (typeof job.toJSON === 'function') {
+      jobObj = job.toJSON();
+    }
+
+    // Get the user info for the job owner
+    try {
+      const owner = await User.findById(jobObj.owner);
+      if (owner) {
+        if (minimal) {
+          // Just include essential owner info for list views
+          jobObj.ownerId = owner._id;
+          jobObj.ownerProfilePicture = owner.profilePicture;
+          jobObj.owner = owner.name; // Replace owner ID with name
+        } else {
+          // Include more owner details for detailed view
+          jobObj.ownerId = owner._id;
+          jobObj.ownerProfilePicture = owner.profilePicture;
+          jobObj.owner = owner.name; // Replace owner ID with name
+          jobObj.ownerJoined = owner.joined;
+        }
+      }
+    } catch (err) {
+      console.error('Error enriching job with owner data:', err);
+    }
+    
+    enrichedJobs.push(jobObj);
+  }
+  
+  return Array.isArray(jobs) ? enrichedJobs : enrichedJobs[0];
+}
+
 // Jobs routes - REORGANIZED TO PREVENT ROUTE CONFLICTS
 // 1. Get all jobs - specific route first
 app.get('/api/jobs', async (req, res) => {
-  const jobs = await Job.find();
-  res.json(jobs);
+  try {
+    const jobs = await Job.find();
+    const enrichedJobs = await enrichJobsWithOwnerInfo(jobs, true);
+    res.json(enrichedJobs);
+  } catch (err) {
+    console.error('Error fetching jobs:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch jobs' });
+  }
 });
 
 // 2. Create a new job (authenticated only)
@@ -303,13 +350,19 @@ app.get('/api/user/saved-jobs', authenticateToken, async (req, res) => {
   res.json(jobs);
 });
 
-// 4. Get job by ID - parametric route last
+// 4. Get job by ID - parametric route
 app.get('/api/jobs/:id', async (req, res) => {
-  const job = await Job.findById(req.params.id);
-  if (job) {
-    res.json(job);
-  } else {
-    res.status(404).json({ message: 'Job not found' });
+  try {
+    const job = await Job.findById(req.params.id);
+    if (job) {
+      const enrichedJob = await enrichJobsWithOwnerInfo(job);
+      res.json(enrichedJob);
+    } else {
+      res.status(404).json({ message: 'Job not found' });
+    }
+  } catch (err) {
+    console.error('Error fetching job:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch job details' });
   }
 });
 
@@ -361,12 +414,102 @@ app.post('/api/notifications', async (req, res) => {
 });
 
 // User routes
-app.get('/api/users/:id', async (req, res) => {
-  const user = await User.findById(req.params.id);
-  if (user) {
-    res.json({ id: user._id, email: user.email, name: user.name });
-  } else {
-    res.status(404).json({ message: 'User not found' });
+// Update user profile endpoint
+app.put('/api/user/profile', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, bio, phone, location, website, profilePicture } = req.body;
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { 
+        name,
+        bio,
+        phone,
+        location,
+        website,
+        profilePicture
+      },
+      { new: true }
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    res.json({ 
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        id: updatedUser._id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        bio: updatedUser.bio,
+        phone: updatedUser.phone,
+        location: updatedUser.location,
+        website: updatedUser.website,
+        profilePicture: updatedUser.profilePicture,
+        joined: updatedUser.joined || new Date().toISOString().slice(0, 10)
+      }
+    });
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    res.status(500).json({ success: false, message: 'Failed to update profile' });
+  }
+});
+
+// Get user profile endpoint
+app.get('/api/user/profile', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    res.json({
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      bio: user.bio || '',
+      phone: user.phone || '',
+      location: user.location || '',
+      website: user.website || '',
+      profilePicture: user.profilePicture || '',
+      joined: user.joined || new Date().toISOString().slice(0, 10)
+    });
+  } catch (err) {
+    console.error('Error fetching profile:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch profile' });
+  }
+});
+
+// Get public user profile by ID
+app.get('/api/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Return only public fields
+    res.json({
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      bio: user.bio || '',
+      phone: user.phone || '',
+      location: user.location || '',
+      website: user.website || '',
+      profilePicture: user.profilePicture || '',
+      joined: user.joined || new Date().toISOString().slice(0, 10)
+    });
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch user profile' });
   }
 });
 
@@ -432,9 +575,9 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   // Send reset email
   const resetUrl = `${FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
   await transporter.sendMail({
-    from: process.env.SMTP_USER || 'noreply@startupconnect.com',
+    from: process.env.SMTP_USER || 'noreply@startapp.com',
     to: normalizedEmail,
-    subject: 'Reset your password for StartUp Connect',
+    subject: 'Reset your password for StartApp',
     html: `<p>Hello,</p><p>You requested a password reset. Click <a href="${resetUrl}">here</a> to reset your password. This link is valid for 15 minutes.</p>`
   });
   res.json({ success: true, message: 'If this email exists, a reset link will be sent.' });

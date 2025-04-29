@@ -51,7 +51,7 @@ const HomePage: React.FC = () => {
             margin: '0 auto 40px auto',
             lineHeight: 1.5,
           }}>
-            StartUp Connect brings entrepreneurs and investors together to build the next generation of successful businesses.
+            StartApp Connect brings entrepreneurs and investors together to build the next generation of successful businesses.
           </p>
 
           <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>

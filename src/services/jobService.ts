@@ -1,5 +1,5 @@
 // Use environment variable with fallback to production URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://startup-bp55.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://startapp-bp55.onrender.com/api';
 
 export const jobService = {
   getJobs: async () => {
@@ -73,6 +73,19 @@ export const jobService = {
         },
       });
       if (!res.ok) throw new Error('Failed to fetch saved jobs');
+      return await res.json();
+    } catch (err) {
+      return { success: false, message: (err as Error).message };
+    }
+  },
+  getMyJobs: async (token: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/user/my-jobs`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error('Failed to fetch your jobs');
       return await res.json();
     } catch (err) {
       return { success: false, message: (err as Error).message };

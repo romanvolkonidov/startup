@@ -20,6 +20,8 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import { useAuthContext } from './context/AuthContext';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import MyPostsPage from './components/dashboard/MyPostsPage';
+import Dashboard from './components/dashboard/Dashboard';
 
 function App() {
   const { currentUser } = useAuthContext();
@@ -38,12 +40,27 @@ function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         
         {/* Protected routes */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
         <Route path="/post-project" element={
           <ProtectedRoute>
             <PostJobPage />
           </ProtectedRoute>
         } />
         <Route path="/jobs/:id" element={<JobDetails />} />
+        <Route path="/my-posts" element={
+          <ProtectedRoute>
+            <MyPostsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/saved-posts" element={
+          <ProtectedRoute>
+            <MyPostsPage savedOnly={true} />
+          </ProtectedRoute>
+        } />
         <Route path="/profile" element={
           <ProtectedRoute>
             <ProfilePage />

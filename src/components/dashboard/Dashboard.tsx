@@ -14,8 +14,8 @@ const Dashboard: React.FC = () => {
         textAlign: 'center',
         boxShadow: '0 2px 8px rgba(25, 118, 210, 0.08)'
       }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 700, margin: 0 }}>Welcome to StartUp Connect</h1>
-        <p style={{ fontSize: '1.2rem', margin: '16px 0 0 0', color: '#e3f2fd' }}>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 700, margin: 0 }}>Welcome to StartApp Connect</h1>
+        <p style={{ fontSize: '1.2rem', color: '#666', margin: '8px 0 24px' }}>
           Post your startup or project, attract investors, and grow your vision.
         </p>
         <Link to="/post-job">

@@ -5,7 +5,7 @@ import { useAuthContext } from '../../context/AuthContext';
 import { useNotificationContext } from '../../context/NotificationContext';
 
 const ProfilePage: React.FC = () => {
-  const { currentUser, token } = useAuthContext();
+  const { currentUser, token, setCurrentUser } = useAuthContext();
   const { addNotification } = useNotificationContext();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -114,7 +114,7 @@ const ProfilePage: React.FC = () => {
         const blob = new Blob([ab], { type: mimeString });
         const file = new File([blob], "profile-picture.jpg", { type: mimeString });
         
-        formData.append('image', file);
+        formData.append('profilePicture', file);
         
         const uploadResponse = await fetch('/api/upload/profile-picture', {
           method: 'POST',
@@ -124,11 +124,14 @@ const ProfilePage: React.FC = () => {
         
         if (uploadResponse.ok) {
           const uploadData = await uploadResponse.json();
-          profilePictureUrl = uploadData.image;
+          profilePictureUrl = uploadData.url;
         } else {
           throw new Error('Failed to upload profile picture');
         }
       }
+      
+      // Ensure bio is a string, not an object
+      const bioValue = typeof userData.bio === 'object' ? JSON.stringify(userData.bio) : userData.bio;
       
       // Update user profile with all data
       const response = await fetch('/api/user/profile', {
@@ -139,6 +142,7 @@ const ProfilePage: React.FC = () => {
         },
         body: JSON.stringify({
           ...userData,
+          bio: bioValue,
           profilePicture: profilePictureUrl,
         }),
       });
@@ -146,17 +150,34 @@ const ProfilePage: React.FC = () => {
       if (response.ok) {
         setSuccess('Profile updated successfully!');
         setProfilePicture(previewImage);
-        addNotification({ message: 'Profile updated successfully!', type: 'success' });
-        setIsEditing(false);
-      } else {
+        
+        // Update context with new user data
         const data = await response.json();
-        throw new Error(data.message || 'Failed to update profile');
+        if (data.user) {
+          setCurrentUser(data.user);
+        }
+        
+        // Show notification
+        addNotification({
+          message: 'Profile updated successfully!',
+          type: 'success'
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update profile');
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred while updating your profile');
-      addNotification({ message: err.message || 'Failed to update profile', type: 'error' });
+      console.error('Profile update error:', err);
+      setError(err.message || 'Failed to update profile');
+      
+      // Show error notification
+      addNotification({
+        message: err.message || 'Failed to update profile',
+        type: 'error'
+      });
     } finally {
       setLoading(false);
+      setIsEditing(false);
     }
   };
   
