@@ -89,4 +89,19 @@ export const jobService = {
       return { success: false, message: (err as Error).message };
     }
   },
+  deleteJob: async (id: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/jobs/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error('Failed to delete job');
+      return await res.json();
+    } catch (err) {
+      return { success: false, message: (err as Error).message };
+    }
+  },
 };

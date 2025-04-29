@@ -1,7 +1,33 @@
 const fetch = require('node-fetch');
+const fs = require('fs');
+const path = require('path');
 
-// Your auth token - replace this with your actual token
-const TOKEN = 'your-auth-token'; // Get this by logging in manually first
+// Get token from localStorage or environment
+const getToken = () => {
+  // Try to get from environment variable first
+  if (process.env.AUTH_TOKEN) {
+    return process.env.AUTH_TOKEN;
+  }
+  
+  // If not in environment, try to get from localStorage (via browser)
+  if (typeof localStorage !== 'undefined') {
+    return localStorage.getItem('token');
+  }
+  
+  console.log('Please set your token before running this script:');
+  console.log('1. Either set the AUTH_TOKEN environment variable:');
+  console.log('   export AUTH_TOKEN=your-token-here  (Linux/Mac)');
+  console.log('   set AUTH_TOKEN=your-token-here     (Windows)');
+  console.log('2. Or edit this script and set the token directly:');
+  console.log('   const TOKEN = "your-token-here";');
+  
+  // If you want to hardcode your token for testing, you can uncomment and use this:
+  // return "your-token-here";
+  return null;
+};
+
+// Get API URL from environment or use production URL from project
+const API_URL = process.env.API_URL || 'https://startup-bp55.onrender.com/api/jobs';
 
 // Sample project data (10 examples with realistic funding needs)
 const examplePosts = [
@@ -107,11 +133,18 @@ const examplePosts = [
 
 // Function to create posts sequentially
 async function createPosts() {
-  console.log('Starting to create posts...');
+  const TOKEN = getToken();
+  
+  if (!TOKEN) {
+    console.error('No authentication token available. Please provide a token first.');
+    process.exit(1);
+  }
+
+  console.log(`Starting to create posts on ${API_URL}...`);
   
   for (const post of examplePosts) {
     try {
-      const response = await fetch('http://localhost:3001/api/jobs', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -129,7 +162,7 @@ async function createPosts() {
       }
       
       // Add a small delay to prevent rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Longer delay for production server
       
     } catch (error) {
       console.error(`Error creating post: ${post.title}`, error);
