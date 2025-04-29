@@ -137,7 +137,7 @@ export const authService = {
   },
   
   // For mobile-friendly authentication flow (optional)
-  signInWithRedirect: async (provider) => {
+  signInWithRedirect: async (provider: any) => {
     try {
       await signInWithRedirect(auth, provider);
       return { success: true };
@@ -164,7 +164,7 @@ export const authService = {
 };
 
 // Helper function to send Firebase ID token to backend
-async function handleFirebaseAuth(idToken) {
+async function handleFirebaseAuth(idToken: string) {
   try {
     const response = await axios.post(`${API_URL}/auth/firebase-login`, { idToken });
     const { data } = response;
@@ -180,11 +180,15 @@ async function handleFirebaseAuth(idToken) {
     } else {
       return { success: false, message: data.message || 'Authentication failed' };
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Firebase backend authentication error:', error);
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Authentication server error';
+      
     return {
       success: false,
-      message: error.response?.data?.message || 'Authentication server error'
+      message: (error as any).response?.data?.message || errorMessage
     };
   }
 }
