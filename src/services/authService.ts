@@ -1,4 +1,8 @@
-const API_URL = 'https://startup-bp55.onrender.com/api';
+import axios from 'axios';
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { auth, googleProvider, facebookProvider, twitterProvider } from '../firebase';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export const authService = {
   login: async (email: string, password: string) => {
@@ -96,4 +100,91 @@ export const authService = {
       return { success: false, message: 'Network error.' };
     }
   },
+  
+  // Firebase authentication methods
+  signInWithGoogle: async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      // Get the Firebase ID token
+      const idToken = await result.user.getIdToken();
+      return await handleFirebaseAuth(idToken);
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      return { success: false, message: 'Failed to sign in with Google' };
+    }
+  },
+  
+  signInWithFacebook: async () => {
+    try {
+      const result = await signInWithPopup(auth, facebookProvider);
+      const idToken = await result.user.getIdToken();
+      return await handleFirebaseAuth(idToken);
+    } catch (error) {
+      console.error('Facebook sign-in error:', error);
+      return { success: false, message: 'Failed to sign in with Facebook' };
+    }
+  },
+  
+  signInWithTwitter: async () => {
+    try {
+      const result = await signInWithPopup(auth, twitterProvider);
+      const idToken = await result.user.getIdToken();
+      return await handleFirebaseAuth(idToken);
+    } catch (error) {
+      console.error('Twitter sign-in error:', error);
+      return { success: false, message: 'Failed to sign in with Twitter' };
+    }
+  },
+  
+  // For mobile-friendly authentication flow (optional)
+  signInWithRedirect: async (provider) => {
+    try {
+      await signInWithRedirect(auth, provider);
+      return { success: true };
+    } catch (error) {
+      console.error('Redirect sign-in error:', error);
+      return { success: false, message: 'Failed to initiate sign-in' };
+    }
+  },
+  
+  // Handle redirect result
+  handleRedirectResult: async () => {
+    try {
+      const result = await getRedirectResult(auth);
+      if (result) {
+        const idToken = await result.user.getIdToken();
+        return await handleFirebaseAuth(idToken);
+      }
+      return null; // No redirect result
+    } catch (error) {
+      console.error('Handle redirect result error:', error);
+      return { success: false, message: 'Failed to complete sign-in' };
+    }
+  }
 };
+
+// Helper function to send Firebase ID token to backend
+async function handleFirebaseAuth(idToken) {
+  try {
+    const response = await axios.post(`${API_URL}/auth/firebase-login`, { idToken });
+    const { data } = response;
+    
+    if (data.success && data.token) {
+      // Store JWT token in localStorage
+      localStorage.setItem('token', data.token);
+      return {
+        success: true,
+        user: data.user,
+        token: data.token
+      };
+    } else {
+      return { success: false, message: data.message || 'Authentication failed' };
+    }
+  } catch (error) {
+    console.error('Firebase backend authentication error:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Authentication server error'
+    };
+  }
+}

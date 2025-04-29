@@ -1,0 +1,153 @@
+/* If this file doesn't exist, we'll create it */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  padding: 2rem;
+}
+
+.formContainer {
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.forgotPassword {
+  text-align: right;
+  margin-bottom: 1.5rem;
+}
+
+.forgotPassword a {
+  color: #4a6cf7;
+  text-decoration: none;
+}
+
+.loginButton {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #4a6cf7;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.loginButton:hover {
+  background-color: #3a5cd8;
+}
+
+.loginButton:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #e53e3e;
+  margin-bottom: 1rem;
+}
+
+.noAccount {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.noAccount a {
+  color: #4a6cf7;
+  text-decoration: none;
+}
+
+/* Social login styles */
+.socialLoginContainer {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.socialLoginContainer h4 {
+  margin-bottom: 1rem;
+  color: #718096;
+  position: relative;
+}
+
+.socialLoginContainer h4::before,
+.socialLoginContainer h4::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 30%;
+  height: 1px;
+  background-color: #e2e8f0;
+}
+
+.socialLoginContainer h4::before {
+  left: 0;
+}
+
+.socialLoginContainer h4::after {
+  right: 0;
+}
+
+.socialButtons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.socialButton {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.socialButton:hover {
+  opacity: 0.9;
+}
+
+.googleButton {
+  background-color: #DB4437;
+}
+
+.facebookButton {
+  background-color: #4267B2;
+}
+
+.twitterButton {
+  background-color: #1DA1F2;
+}
+
+.socialButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
