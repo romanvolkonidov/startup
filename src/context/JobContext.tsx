@@ -18,6 +18,7 @@ interface Job {
   facebook?: string;
   image?: string; // Add image URL
   video?: string; // Add video URL
+  savedBy?: string[]; // Add savedBy property to fix type errors
 }
 
 interface JobContextType {
@@ -123,7 +124,7 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
                 ...job, 
                 savedBy: res.saved 
                   ? [...(job.savedBy || []), 'current-user'] 
-                  : (job.savedBy || []).filter(id => id !== 'current-user')
+                  : (job.savedBy || []).filter((id: string) => id !== 'current-user')
               } 
             : job
         ));
