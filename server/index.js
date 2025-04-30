@@ -620,8 +620,24 @@ app.get('/api/user/my-jobs', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     
-    // Use the ownerId field to find jobs by this user
-    const jobs = await Job.find({ ownerId: userId });
+    // First try to find jobs by ownerId field
+    let jobs = await Job.find({ ownerId: userId });
+    
+    // If no jobs found by ownerId, check for jobs where email matches user's email
+    // This handles older job entries that might not have ownerId
+    if (jobs.length === 0) {
+      const user = await User.findById(userId);
+      if (user && user.email) {
+        jobs = await Job.find({ email: user.email });
+      }
+    }
+    
+    // If still no jobs, check if any job's owner field matches the user's ID
+    // This handles if someone used owner field as ID instead of name
+    if (jobs.length === 0) {
+      jobs = await Job.find({ owner: userId.toString() });
+    }
+    
     const enrichedJobs = await enrichJobsWithOwnerInfo(jobs, true);
     
     res.json(enrichedJobs);

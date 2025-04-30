@@ -3,15 +3,20 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-// MongoDB Atlas connection
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://romanvolkonidov:KXf39eGbFYVFEKL6@startup.8oukgfu.mongodb.net/startup?retryWrites=true&w=majority';
+// MongoDB Atlas connection - use direct connection string instead of DNS SRV
+// This will bypass the DNS SRV lookup that's failing with ECONNREFUSED
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://romanvolkonidov:KXf39eGbFYVFEKL6@ac-mqngjbn-shard-00-00.8oukgfu.mongodb.net:27017,ac-mqngjbn-shard-00-01.8oukgfu.mongodb.net:27017,ac-mqngjbn-shard-00-02.8oukgfu.mongodb.net:27017/startup?ssl=true&replicaSet=atlas-2un6nd-shard-0&authSource=admin&retryWrites=true&w=majority';
 
+// Set up mongoose connection with a longer timeout and more connection options
 mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+  connectTimeoutMS: 30000, // Increase connection timeout to 30 seconds
+  socketTimeoutMS: 45000,  // Increase socket timeout to 45 seconds
 })
 .then(() => console.log('MongoDB connected for migration'))
-.catch(err => console.error('MongoDB connection error:', err));
+.catch(err => {
+  console.error('MongoDB connection error:', err);
+  process.exit(1);
+});
 
 // Define schemas matching the ones in index.js
 const userSchema = new mongoose.Schema({
