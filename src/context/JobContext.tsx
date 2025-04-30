@@ -99,10 +99,41 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
 
   const saveJob = async (jobId: string) => {
     if (!token) return { success: false, message: 'Not authenticated' };
-    const res = await jobService.saveJob(jobId, token);
-    if (res.success) fetchJobs();
-    fetchSavedJobs();
-    return res;
+    
+    try {
+      const res = await jobService.saveJob(jobId, token);
+      
+      if (res.success) {
+        // Update the savedJobs array immediately based on the response
+        if (res.saved) {
+          // Job was saved, add it to savedJobs if not already there
+          const jobToAdd = jobs.find(job => job.id === jobId);
+          if (jobToAdd && !savedJobs.some(job => job.id === jobId)) {
+            setSavedJobs(prev => [...prev, jobToAdd]);
+          }
+        } else {
+          // Job was unsaved, remove it from savedJobs
+          setSavedJobs(prev => prev.filter(job => job.id !== jobId));
+        }
+        
+        // Also update the save count in the jobs list
+        setJobs(prev => prev.map(job => 
+          job.id === jobId 
+            ? { 
+                ...job, 
+                savedBy: res.saved 
+                  ? [...(job.savedBy || []), 'current-user'] 
+                  : (job.savedBy || []).filter(id => id !== 'current-user')
+              } 
+            : job
+        ));
+      }
+      
+      return res;
+    } catch (error) {
+      console.error("Error in saveJob:", error);
+      return { success: false, message: 'Failed to save/unsave job' };
+    }
   };
 
   const deleteMyJob = async (jobId: string) => {

@@ -86,7 +86,7 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
       return;
     }
     
-    // If user is the owner, just show contacts directly without API call
+    // If user is the owner, just show contacts directly without API call to save a request
     if (isOwner) {
       setContacts({
         email: (job as any).email || currentUser.email,
@@ -103,20 +103,27 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
     setContactsVisible(true);
     
     try {
-      // Enhanced validation to ensure we have a valid MongoDB ObjectId format
-      // MongoDB ObjectId is a 24-character hex string
-      if (!job.id || typeof job.id !== 'string' || job.id === 'undefined' || !/^[0-9a-fA-F]{24}$/.test(job.id)) {
-        console.error('Invalid job ID format for contact fetch:', job.id);
-        setContactsError('Cannot retrieve contact information: Invalid job ID');
+      // First attempt to use contact info directly from the job object if available
+      if (job.email) {
+        // If the job already has contact information, use it directly 
+        // This avoids unnecessary API calls
+        setContacts({
+          email: job.email || '',
+          phone: job.phone || '',
+          whatsapp: job.whatsapp || '',
+          instagram: job.instagram || '',
+          facebook: job.facebook || '',
+        });
         return;
       }
 
+      // If we don't have the contact info already, fetch it from the API
       console.log('Fetching contacts for job ID:', job.id);
-      // Use jobService instead of direct fetch for correct API URL handling
       const response = await jobService.getJobContacts(job.id, token);
       
       if (response.success === false) {
         setContactsError(response.message || 'Failed to load contacts');
+        console.error('Contact fetch error:', response.message);
       } else {
         setContacts(response);
       }

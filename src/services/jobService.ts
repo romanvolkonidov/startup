@@ -216,11 +216,16 @@ export const jobService = {
         return { success: false, message: 'Authentication required. Please log in again.' };
       }
       
+      // Use a direct URL to ensure we're hitting the correct endpoint
       const res = await fetch(`${API_BASE_URL}/user/my-jobs`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
+        // Add cache: 'no-store' to prevent caching issues
+        cache: 'no-store'
       });
+      
+      console.log('My jobs response status:', res.status);
       
       if (!res.ok) {
         console.error(`My jobs fetch failed with status: ${res.status}`);
@@ -230,10 +235,12 @@ export const jobService = {
         if (res.status === 401 || res.status === 403) {
           return { success: false, message: 'Your session has expired. Please log in again.' };
         }
-        throw new Error(`Failed to fetch your jobs: ${res.status}`);
+        return { success: false, message: `Failed to fetch your jobs: ${res.status}` };
       }
       
-      return await res.json();
+      const data = await res.json();
+      console.log('My jobs data received:', Array.isArray(data) ? `${data.length} jobs` : 'Not an array');
+      return data;
     } catch (err) {
       console.error('Error fetching my jobs:', err);
       return { success: false, message: (err as Error).message };
@@ -250,10 +257,10 @@ export const jobService = {
         return { success: false, message: 'Authentication required. Please log in again.' };
       }
 
-      // Comprehensive validation to ensure we have a valid MongoDB ObjectId format
-      if (!id || typeof id !== 'string' || id === 'undefined' || !/^[0-9a-fA-F]{24}$/.test(id)) {
-        console.error('Invalid job ID format:', id);
-        return { success: false, message: 'Invalid job ID provided' };
+      // Simple check that ID exists but allow server to do main validation
+      if (!id) {
+        console.error('Missing job ID');
+        return { success: false, message: 'Missing job ID' };
       }
       
       const res = await fetch(`${API_BASE_URL}/jobs/${id}/contacts`, {
@@ -267,6 +274,9 @@ export const jobService = {
         
         if (res.status === 401 || res.status === 403) {
           return { success: false, message: 'Your session has expired. Please log in again.' };
+        }
+        if (res.status === 400) {
+          return { success: false, message: 'Invalid job ID format' };
         }
         throw new Error('Not authorized to view contacts');
       }

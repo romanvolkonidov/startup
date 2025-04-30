@@ -33,12 +33,18 @@ const MyPostsPage: React.FC<MyPostsPageProps> = ({ savedOnly = false }) => {
           data = await jobService.getMyJobs(token);
         }
         
+        console.log('Response data:', data);
+        
         if (Array.isArray(data)) {
           setMyJobs(data);
+        } else if (data && data.success === false) {
+          // Handle error response with message
+          setError(data.message || `Failed to fetch your ${savedOnly ? 'saved posts' : 'posts'}`);
         } else {
           setError(`Failed to fetch your ${savedOnly ? 'saved posts' : 'posts'}`);
         }
       } catch (err) {
+        console.error('Error fetching posts:', err);
         setError(`An error occurred while fetching your ${savedOnly ? 'saved posts' : 'posts'}`);
       } finally {
         setLoading(false);
