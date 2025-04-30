@@ -260,7 +260,6 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
       fetchSavedJobs();
       fetchMyJobs(); // Fetch my jobs when context is loaded
     }
-    // eslint-disable-next-line
   }, [token]);
 
   const contextValue = useMemo(() => ({ 
@@ -281,8 +280,7 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
     fetchSavedJobs, 
     saveJob,
     deleteMyJob
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [jobs, myJobs, loading, myJobsLoading, error, myJobsError, savedJobs, savedJobsLoading, savedJobsError, deleteMyJob]); // Add deleteMyJob to dependency array
+  }), [jobs, myJobs, loading, myJobsLoading, error, myJobsError, savedJobs, savedJobsLoading, savedJobsError, deleteMyJob]);
 
   return (
     <JobContext.Provider value={contextValue}>
