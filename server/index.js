@@ -385,9 +385,33 @@ app.post('/api/jobs', authenticateToken, async (req, res) => {
 
 // 3. Get user's saved jobs - moved to user routes section to avoid conflicts
 app.get('/api/user/saved-jobs', authenticateToken, async (req, res) => {
-  const userId = req.user.id;
-  const jobs = await Job.find({ savedBy: userId });
-  res.json(jobs);
+  try {
+    const userId = req.user.id;
+    console.log('Finding saved jobs for user ID:', userId);
+
+    // Validate userId
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      console.error('Invalid user ID in /api/user/saved-jobs:', userId);
+      return res.status(400).json({ success: false, message: 'Invalid user identifier' });
+    }
+    
+    const jobs = await Job.find({ savedBy: userId });
+    console.log(`Found ${jobs.length} saved jobs`);
+    
+    let enrichedJobs = [];
+    try {
+      enrichedJobs = await enrichJobsWithOwnerInfo(jobs, true);
+    } catch (enrichErr) {
+      console.error('Error enriching saved jobs:', enrichErr);
+      // Decide if you want to return partial data or an error
+      // return res.status(500).json({ success: false, message: 'Failed to process saved job details' });
+    }
+    
+    res.json(enrichedJobs);
+  } catch (err) {
+    console.error('Error fetching saved jobs:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch saved jobs' });
+  }
 });
 
 // 4. Get job by ID - parametric route
@@ -620,6 +644,12 @@ app.get('/api/user/my-jobs', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     
+    // Validate userId
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      console.error('Invalid user ID in /api/user/my-jobs:', userId);
+      return res.status(400).json({ success: false, message: 'Invalid user identifier' });
+    }
+
     // First try to find jobs by ownerId field
     let jobs = await Job.find({ ownerId: userId });
     
@@ -638,8 +668,16 @@ app.get('/api/user/my-jobs', authenticateToken, async (req, res) => {
       jobs = await Job.find({ owner: userId.toString() });
     }
     
-    const enrichedJobs = await enrichJobsWithOwnerInfo(jobs, true);
-    
+    let enrichedJobs = [];
+    try {
+      enrichedJobs = await enrichJobsWithOwnerInfo(jobs, true);
+    } catch (enrichErr) {
+      console.error('Error enriching user jobs:', enrichErr);
+      // Decide if you want to return partial data or an error
+      // Returning potentially un-enriched jobs might be better than a full error
+      // return res.status(500).json({ success: false, message: 'Failed to process job details' });
+    }
+
     res.json(enrichedJobs);
   } catch (err) {
     console.error('Error fetching user jobs:', err);
@@ -882,6 +920,12 @@ app.get('/api/user/my-jobs', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     console.log('Finding jobs for user ID:', userId);
     
+    // Validate userId
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      console.error('Invalid user ID in /api/user/my-jobs:', userId);
+      return res.status(400).json({ success: false, message: 'Invalid user identifier' });
+    }
+
     // First try to find jobs by ownerId field
     let jobs = await Job.find({ ownerId: userId });
     console.log(`Found ${jobs.length} jobs by ownerId`);
@@ -901,8 +945,16 @@ app.get('/api/user/my-jobs', authenticateToken, async (req, res) => {
       console.log(`Found ${jobs.length} jobs by owner ID string`);
     }
     
-    const enrichedJobs = await enrichJobsWithOwnerInfo(jobs, true);
-    
+    let enrichedJobs = [];
+    try {
+      enrichedJobs = await enrichJobsWithOwnerInfo(jobs, true);
+    } catch (enrichErr) {
+      console.error('Error enriching user jobs:', enrichErr);
+      // Decide if you want to return partial data or an error
+      // Returning potentially un-enriched jobs might be better than a full error
+      // return res.status(500).json({ success: false, message: 'Failed to process job details' });
+    }
+
     res.json(enrichedJobs);
   } catch (err) {
     console.error('Error fetching user jobs:', err);
@@ -915,11 +967,24 @@ app.get('/api/user/saved-jobs', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     console.log('Finding saved jobs for user ID:', userId);
+
+    // Validate userId
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      console.error('Invalid user ID in /api/user/saved-jobs:', userId);
+      return res.status(400).json({ success: false, message: 'Invalid user identifier' });
+    }
     
     const jobs = await Job.find({ savedBy: userId });
     console.log(`Found ${jobs.length} saved jobs`);
     
-    const enrichedJobs = await enrichJobsWithOwnerInfo(jobs, true);
+    let enrichedJobs = [];
+    try {
+      enrichedJobs = await enrichJobsWithOwnerInfo(jobs, true);
+    } catch (enrichErr) {
+      console.error('Error enriching saved jobs:', enrichErr);
+      // Decide if you want to return partial data or an error
+      // return res.status(500).json({ success: false, message: 'Failed to process saved job details' });
+    }
     
     res.json(enrichedJobs);
   } catch (err) {

@@ -194,12 +194,14 @@ export const jobService = {
       if (!res.ok) {
         console.error(`Saved jobs fetch failed with status: ${res.status}`);
         const errorText = await res.text().catch(() => '');
-        console.error('Error response:', errorText);
-        
-        if (res.status === 401 || res.status === 403) {
-          return { success: false, message: 'Your session has expired. Please log in again.' };
+        console.error('Error response text:', errorText); // Log the specific error text
+        // Try to parse as JSON, fallback to text
+        try {
+          const errorJson = JSON.parse(errorText);
+          return { success: false, message: errorJson.message || `HTTP error ${res.status}` };
+        } catch {
+          return { success: false, message: errorText || `HTTP error ${res.status}` };
         }
-        throw new Error(`Failed to fetch saved jobs: ${res.status}`);
       }
       
       const data = await res.json();
@@ -233,12 +235,14 @@ export const jobService = {
       if (!res.ok) {
         console.error(`My jobs fetch failed with status: ${res.status}`);
         const errorText = await res.text().catch(() => '');
-        console.error('Error response:', errorText);
-        
-        if (res.status === 401 || res.status === 403) {
-          return { success: false, message: 'Your session has expired. Please log in again.' };
+        console.error('Error response text:', errorText); // Log the specific error text
+        // Try to parse as JSON, fallback to text
+        try {
+          const errorJson = JSON.parse(errorText);
+          return { success: false, message: errorJson.message || `HTTP error ${res.status}` };
+        } catch {
+          return { success: false, message: errorText || `HTTP error ${res.status}` };
         }
-        return { success: false, message: `Failed to fetch your jobs: ${res.status}` };
       }
       
       const data = await res.json();
