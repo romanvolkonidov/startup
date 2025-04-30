@@ -183,13 +183,11 @@ export const jobService = {
         return { success: false, message: 'Authentication required. Please log in again.' };
       }
       
-      // Updated endpoint to match common REST API patterns
-      // Most APIs use /jobs/saved or /jobs?saved=true for this
-      const res = await fetch(`${API_BASE_URL}/jobs/saved`, {
+      // FIX: Use the correct backend endpoint for saved jobs
+      const res = await fetch(`${API_BASE_URL}/user/saved-jobs`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
-        // Add cache: 'no-store' to prevent caching issues
         cache: 'no-store'
       });
       
