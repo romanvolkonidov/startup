@@ -34,7 +34,8 @@ export const userService = {
         return { success: false, message: 'Authentication required. Please log in again.' };
       }
       
-      const res = await fetch(`${API_BASE_URL}/users/me`, {
+      // Updated endpoint to match backend
+      const res = await fetch(`${API_BASE_URL}/user/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -66,8 +67,9 @@ export const userService = {
         return { success: false, message: 'Authentication required. Please log in again.' };
       }
       
-      const res = await fetch(`${API_BASE_URL}/users/me`, {
-        method: 'PATCH',
+      // Updated endpoint to match backend
+      const res = await fetch(`${API_BASE_URL}/user/profile`, {
+        method: 'PUT', // Changed from PATCH to PUT to match backend
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` 
@@ -147,7 +149,8 @@ export const userService = {
       const formData = new FormData();
       formData.append('profilePicture', file);
       
-      const res = await fetch(`${API_BASE_URL}/users/profile-picture`, {
+      // Updated endpoint to match backend
+      const res = await fetch(`${API_BASE_URL}/upload/profile-picture`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

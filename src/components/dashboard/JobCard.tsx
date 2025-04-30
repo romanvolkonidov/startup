@@ -67,8 +67,11 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
   const isSaved = !!savedJobs?.some(j => j.id === job.id);
   // For save count, assume job.savedBy is an array of user IDs
   const saveCount = (job as any).savedBy?.length || 0;
-  // Convert isOwner from boolean | null to boolean 
-  const isOwner = !!currentUser && (currentUser.id === job.owner || currentUser.id === job.ownerId);
+  // Consistently use ownerId for ownership check, falling back to owner only if it's an ID
+  const isOwner = !!currentUser && (
+    (job.ownerId && currentUser.id === job.ownerId) || 
+    (job.owner && currentUser.id === job.owner)
+  );
 
   const handleSave = async () => {
     if (!currentUser) return;
@@ -345,7 +348,7 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
               opacity: saving ? 0.6 : 1,
             }}
             onClick={handleSave}
-            disabled={saving || !currentUser || isOwner}
+            disabled={!!(saving || !currentUser || isOwner)}
           >
             {isSaved ? (
               <svg width="26" height="26" viewBox="0 0 24 24" fill="#e53935" stroke="#e53935" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21C12 21 4 13.36 4 8.5C4 5.42 6.42 3 9.5 3C11.24 3 12.91 3.81 14 5.08C15.09 3.81 16.76 3 18.5 3C21.58 3 24 5.42 24 8.5C24 13.36 16 21 16 21H12Z" /></svg>

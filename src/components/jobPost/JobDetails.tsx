@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { jobService } from '../../services/jobService';
+import { userService } from '../../services/userService';
 import { useAuthContext } from '../../context/AuthContext';
 import { isValidObjectId } from '../../utils/validateForm';
 
@@ -80,17 +81,13 @@ const JobDetails: React.FC = () => {
       // Get the user ID from the job owner
       const ownerId = job.ownerId || job.owner;
       
-      // Fetch the user profile
-      const response = await fetch(`/api/users/${ownerId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Use userService instead of direct fetch for consistent API handling
+      const response = await userService.getUserById(ownerId, token);
       
-      const data = await response.json();
-      
-      if (response.ok) {
-        setOwnerProfile(data);
+      if (response.success === false) {
+        setProfileError(response.message || 'Failed to load profile');
       } else {
-        setProfileError(data.message || 'Failed to load profile');
+        setOwnerProfile(response);
       }
     } catch (err) {
       setProfileError('An error occurred while loading profile.');
@@ -103,7 +100,11 @@ const JobDetails: React.FC = () => {
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
   if (!job) return null;
 
-  const isOwner = currentUser && currentUser.id === job.owner;
+  // Consistently use ownerId for ownership check, falling back to owner only if it's an ID
+  const isOwner = !!currentUser && (
+    (job.ownerId && currentUser.id === job.ownerId) || 
+    (job.owner && currentUser.id === job.owner)
+  );
 
   return (
     <div style={{

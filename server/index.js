@@ -71,8 +71,18 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   name: { type: String, required: true },
-  // Add role field
-  role: { type: String, enum: ['admin', 'user'], default: 'user' }
+  role: { type: String, enum: ['admin', 'user'], default: 'user' },
+  verified: { type: Boolean, default: false },
+  verificationCode: String,
+  verificationCodeExpires: Date,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
+  bio: { type: String, default: '' },
+  phone: { type: String, default: '' },
+  location: { type: String, default: '' },
+  website: { type: String, default: '' },
+  profilePicture: { type: String, default: '' },
+  joined: { type: String, default: function() { return new Date().toISOString().slice(0, 10); } }
 });
 const User = mongoose.model('User', userSchema);
 
