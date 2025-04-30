@@ -183,10 +183,14 @@ export const jobService = {
         return { success: false, message: 'Authentication required. Please log in again.' };
       }
       
-      const res = await fetch(`${API_BASE_URL}/user/saved-jobs`, {
+      // Updated endpoint to match common REST API patterns
+      // Most APIs use /jobs/saved or /jobs?saved=true for this
+      const res = await fetch(`${API_BASE_URL}/jobs/saved`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
+        // Add cache: 'no-store' to prevent caching issues
+        cache: 'no-store'
       });
       
       if (!res.ok) {
@@ -200,7 +204,9 @@ export const jobService = {
         throw new Error(`Failed to fetch saved jobs: ${res.status}`);
       }
       
-      return await res.json();
+      const data = await res.json();
+      console.log('Saved jobs data received:', Array.isArray(data) ? `${data.length} jobs` : 'Not an array');
+      return data;
     } catch (err) {
       console.error('Error fetching saved jobs:', err);
       return { success: false, message: (err as Error).message };
@@ -216,8 +222,9 @@ export const jobService = {
         return { success: false, message: 'Authentication required. Please log in again.' };
       }
       
-      // Use a direct URL to ensure we're hitting the correct endpoint
-      const res = await fetch(`${API_BASE_URL}/user/my-jobs`, {
+      // Try the standard API endpoint for user's own jobs
+      // Some backends use /jobs/my or /jobs?owner=me instead of /user/my-jobs
+      const res = await fetch(`${API_BASE_URL}/jobs/my`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

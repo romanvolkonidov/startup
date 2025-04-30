@@ -152,8 +152,18 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
           : job
       ));
       
-      // Fetch fresh saved jobs from server to ensure consistency
-      fetchSavedJobs();
+      // DON'T immediately fetch saved jobs as it can override our optimistic update
+      // Instead, update the saved jobs list based on the response
+      if (res.saved) {
+        // Make sure we're not adding duplicates
+        const jobToAdd = jobs.find(job => job.id === jobId);
+        if (jobToAdd && !savedJobs.some(j => j.id === jobId)) {
+          setSavedJobs(prev => [...prev, jobToAdd]);
+        }
+      } else {
+        // Remove from saved jobs
+        setSavedJobs(prev => prev.filter(job => job.id !== jobId));
+      }
       
       return res;
     } catch (error) {

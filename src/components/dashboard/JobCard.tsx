@@ -38,10 +38,12 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
   onJobUpdated,
   isMyPostsPage = false 
 }) => {
-  // Demo: Assume job.image and job.video are base64 or URL strings if present
+  // Fix media display with improved URL handling
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'image' | 'video' | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  
+  // Other state variables
   const [contactsVisible, setContactsVisible] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -59,10 +61,20 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState('');
 
-  // Demo fields (replace with real job.image/job.video when backend ready)
-  const image = (job as any).image || null;
-  const video = (job as any).video || null;
-
+  // Properly handle image and video URLs with baseUrl fallback
+  const baseUrl = window.location.origin;
+  const image = job.image ? (job.image.startsWith('http') || job.image.startsWith('/') ? job.image : `${baseUrl}/${job.image}`) : null;
+  const video = job.video ? (job.video.startsWith('http') || job.video.startsWith('/') ? job.video : `${baseUrl}/${job.video}`) : null;
+  
+  // Debug logs to help troubleshoot media issues
+  console.log('Job media info:', {
+    jobId: job.id,
+    originalImage: job.image,
+    originalVideo: job.video,
+    processedImage: image,
+    processedVideo: video
+  });
+  
   // Determine if this job is saved by the current user
   const isSaved = !!savedJobs?.some(j => j.id === job.id);
   // For save count, assume job.savedBy is an array of user IDs
@@ -396,7 +408,7 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
                 boxShadow: '0 2px 8px rgba(142, 36, 170, 0.10)',
                 transition: 'background 0.2s',
               }}
-              onClick={() => setEditModalOpen(true)}
+              onClick={() => navigate(`/edit-job/${job.id}`)}
             >
               Edit
             </button>

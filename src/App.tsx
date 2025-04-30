@@ -8,6 +8,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import LoginPage from './components/auth/LoginPage';
 import SignUpPage from './components/auth/SignUpPage';
 import PostJobPage from './components/jobPost/PostJobPage';
+import EditJobPage from './components/jobPost/EditJobPage';
 import ProfilePage from './components/user/ProfilePage';
 import SettingsPage from './components/user/SettingsPage';
 import InvestmentPage from './components/investment/InvestmentPage';
@@ -48,6 +49,11 @@ function App() {
         <Route path="/post-project" element={
           <ProtectedRoute>
             <PostJobPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/edit-job/:jobId" element={
+          <ProtectedRoute>
+            <EditJobPage />
           </ProtectedRoute>
         } />
         <Route path="/jobs/:id" element={<JobDetails />} />
