@@ -112,7 +112,8 @@ export const userService = {
         return { success: false, message: 'Invalid user ID provided' };
       }
       
-      const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      // Changed from /users/ to /user/ to match backend API pattern
+      const res = await fetch(`${API_BASE_URL}/user/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

@@ -10,7 +10,8 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider, appleProvider } from '../firebase';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://startapp-bp55.onrender.com/api';
+// Use consistent API_BASE_URL naming across all service files
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://startapp-bp55.onrender.com/api';
 
 // Helper function to extract meaningful error messages from Firebase errors
 const getFirebaseErrorMessage = (error: unknown): string => {
@@ -78,7 +79,7 @@ export const authService = {
   },
   getMe: async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/auth/me`, {
+      const res = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return { success: false };
@@ -111,7 +112,7 @@ export const authService = {
   refreshToken: async (token: string) => {
     try {
       console.log('Calling token refresh API endpoint');
-      const res = await fetch(`${API_URL}/auth/refresh-token`, {
+      const res = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -138,7 +139,7 @@ export const authService = {
 
 async function handleFirebaseAuth(idToken: string) {
   try {
-    const response = await axios.post(`${API_URL}/auth/firebase-login`, { idToken });
+    const response = await axios.post(`${API_BASE_URL}/auth/firebase-login`, { idToken });
     const { data } = response;
     if (data.success && data.token) {
       localStorage.setItem('token', data.token);
