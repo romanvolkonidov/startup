@@ -164,11 +164,12 @@ const EditJobModal: React.FC<EditJobModalProps> = ({ job, isOpen, onClose, onJob
               const media = await handleMediaUpload(imageFile, videoFile);
               
               // Update the job
+              const token = localStorage.getItem('token') || '';
               const updated = await jobService.updateJob(job.id, {
                 ...values,
                 image: media.image,
                 video: media.video,
-              });
+              }, token);
               
               if (updated && updated.success) {
                 setSuccess('Project updated successfully!');
