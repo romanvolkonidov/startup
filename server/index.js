@@ -670,13 +670,69 @@ app.post('/api/upload/profile-picture', authenticateToken, upload.single('profil
   await user.save();
   res.json({ success: true, url: user.profilePicture });
 });
-// File upload endpoint for job image/video
-app.post('/api/upload/job-media', authenticateToken, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'video', maxCount: 1 }]), async (req, res) => {
-  const files = req.files;
-  const result = {};
-  if (files && files.image && files.image[0]) result.image = `/uploads/${files.image[0].filename}`;
-  if (files && files.video && files.video[0]) result.video = `/uploads/${files.video[0].filename}`;
-  res.json({ success: true, ...result });
+// File upload endpoint for job image/video with improved error handling and logging
+app.post('/api/upload/job-media', authenticateToken, upload.fields([
+  { name: 'image', maxCount: 1 }, 
+  { name: 'video', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    console.log('Job media upload request received');
+    
+    // Check authorization
+    if (!req.user || !req.user.id) {
+      console.error('Unauthorized media upload attempt');
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Unauthorized' 
+      });
+    }
+    
+    // Verify uploads directory exists
+    const fs = require('fs');
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      console.log('Creating uploads directory');
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
+    
+    // Process uploaded files
+    const files = req.files;
+    const result = {};
+    
+    if (files && files.image && files.image[0]) {
+      const imagePath = `/uploads/${files.image[0].filename}`;
+      console.log('Image uploaded:', imagePath);
+      result.image = imagePath;
+    }
+    
+    if (files && files.video && files.video[0]) {
+      const videoPath = `/uploads/${files.video[0].filename}`;
+      console.log('Video uploaded:', videoPath);
+      result.video = videoPath;
+    }
+    
+    // If no files were processed, return an error
+    if (Object.keys(result).length === 0) {
+      console.error('No valid files uploaded');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No valid files uploaded' 
+      });
+    }
+    
+    // Return success with file paths
+    console.log('Media upload successful:', result);
+    res.json({ 
+      success: true,
+      message: 'Files uploaded successfully',
+      ...result 
+    });
+  } catch (error) {
+    console.error('Error in job media upload:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to upload files' 
+    });
+  }
 });
 // Delete job media endpoint
 app.delete('/api/upload/job-media', authenticateToken, async (req, res) => {
@@ -815,6 +871,60 @@ app.post('/api/auth/firebase-login', async (req, res) => {
       success: false,
       message: 'Invalid authentication token'
     });
+  }
+});
+
+// User routes section
+// IMPORTANT: Order matters! Place specific routes before parametric routes
+// Get the logged-in user's posted jobs - MUST be before the /api/user/:id route
+app.get('/api/user/my-jobs', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    console.log('Finding jobs for user ID:', userId);
+    
+    // First try to find jobs by ownerId field
+    let jobs = await Job.find({ ownerId: userId });
+    console.log(`Found ${jobs.length} jobs by ownerId`);
+    
+    // If no jobs found by ownerId, check for jobs where email matches user's email
+    if (jobs.length === 0) {
+      const user = await User.findById(userId);
+      if (user && user.email) {
+        jobs = await Job.find({ email: user.email });
+        console.log(`Found ${jobs.length} jobs by email`);
+      }
+    }
+    
+    // If still no jobs, check if any job's owner field matches the user's ID
+    if (jobs.length === 0) {
+      jobs = await Job.find({ owner: userId.toString() });
+      console.log(`Found ${jobs.length} jobs by owner ID string`);
+    }
+    
+    const enrichedJobs = await enrichJobsWithOwnerInfo(jobs, true);
+    
+    res.json(enrichedJobs);
+  } catch (err) {
+    console.error('Error fetching user jobs:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch your jobs' });
+  }
+});
+
+// Get user's saved jobs - also must be before the /api/user/:id route
+app.get('/api/user/saved-jobs', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    console.log('Finding saved jobs for user ID:', userId);
+    
+    const jobs = await Job.find({ savedBy: userId });
+    console.log(`Found ${jobs.length} saved jobs`);
+    
+    const enrichedJobs = await enrichJobsWithOwnerInfo(jobs, true);
+    
+    res.json(enrichedJobs);
+  } catch (err) {
+    console.error('Error fetching saved jobs:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch saved jobs' });
   }
 });
 

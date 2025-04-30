@@ -102,33 +102,58 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
     if (!token) return { success: false, message: 'Not authenticated' };
     
     try {
-      const res = await jobService.saveJob(jobId, token);
+      console.log('Saving/unsaving job with ID:', jobId);
       
-      if (res.success) {
-        // Update the savedJobs array immediately based on the response
-        if (res.saved) {
-          // Job was saved, add it to savedJobs if not already there
-          const jobToAdd = jobs.find(job => job.id === jobId);
-          if (jobToAdd && !savedJobs.some(job => job.id === jobId)) {
-            setSavedJobs(prev => [...prev, jobToAdd]);
+      // Optimistically update UI first for better user experience
+      const isCurrentlySaved = savedJobs.some(job => job.id === jobId);
+      
+      if (isCurrentlySaved) {
+        // Optimistically remove from savedJobs
+        setSavedJobs(prev => prev.filter(job => job.id !== jobId));
+      } else {
+        // Optimistically add to savedJobs
+        const jobToAdd = jobs.find(job => job.id === jobId);
+        if (jobToAdd) {
+          setSavedJobs(prev => [...prev, jobToAdd]);
+        }
+      }
+      
+      // Now make the API call
+      const res = await jobService.saveJob(jobId, token);
+      console.log('Save job response:', res);
+      
+      if (!res.success) {
+        console.error('Failed to save/unsave job:', res.message);
+        
+        // Revert optimistic update if API call failed
+        if (isCurrentlySaved) {
+          // Add back to savedJobs
+          const jobToRestore = jobs.find(job => job.id === jobId);
+          if (jobToRestore) {
+            setSavedJobs(prev => [...prev, jobToRestore]);
           }
         } else {
-          // Job was unsaved, remove it from savedJobs
+          // Remove from savedJobs
           setSavedJobs(prev => prev.filter(job => job.id !== jobId));
         }
         
-        // Also update the save count in the jobs list
-        setJobs(prev => prev.map(job => 
-          job.id === jobId 
-            ? { 
-                ...job, 
-                savedBy: res.saved 
-                  ? [...(job.savedBy || []), 'current-user'] 
-                  : (job.savedBy || []).filter((id: string) => id !== 'current-user')
-              } 
-            : job
-        ));
+        return res;
       }
+      
+      // Update saveCount in the jobs list
+      setJobs(prev => prev.map(job => 
+        job.id === jobId 
+          ? { 
+              ...job, 
+              savedBy: res.saved 
+                ? [...(job.savedBy || []), 'current-user'] 
+                : (job.savedBy || []).filter((id: string) => id !== 'current-user')
+            } 
+          : job
+      ));
+      
+      // Fetch fresh saved jobs from server to ensure consistency
+      fetchSavedJobs();
       
       return res;
     } catch (error) {

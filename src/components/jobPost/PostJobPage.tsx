@@ -34,18 +34,48 @@ const PostJobPage: React.FC = () => {
   });
 
   const handleMediaUpload = async () => {
-    if (!imageInputRef.current?.files?.length && !videoInputRef.current?.files?.length) return {} as { image?: string; video?: string };
-    const formData = new FormData();
-    if (imageInputRef.current?.files?.[0]) formData.append('image', imageInputRef.current.files[0]);
-    if (videoInputRef.current?.files?.[0]) formData.append('video', videoInputRef.current.files[0]);
-    const token = localStorage.getItem('token');
-    const res = await fetch('/api/upload/job-media', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-    if (!res.ok) return {} as { image?: string; video?: string };
-    return await res.json() as { image?: string; video?: string };
+    if (!imageInputRef.current?.files?.length && !videoInputRef.current?.files?.length) {
+      console.log("No media files to upload");
+      return {} as { image?: string; video?: string };
+    }
+    
+    try {
+      const formData = new FormData();
+      if (imageInputRef.current?.files?.[0]) {
+        formData.append('image', imageInputRef.current.files[0]);
+        console.log("Image file added to upload:", imageInputRef.current.files[0].name);
+      }
+      if (videoInputRef.current?.files?.[0]) {
+        formData.append('video', videoInputRef.current.files[0]);
+        console.log("Video file added to upload:", videoInputRef.current.files[0].name);
+      }
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error("No authentication token available");
+        throw new Error("Authentication required");
+      }
+      
+      console.log("Uploading media files to server...");
+      const res = await fetch('/api/upload/job-media', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Media upload failed:", errorText);
+        throw new Error("Failed to upload media");
+      }
+      
+      const uploadResult = await res.json();
+      console.log("Media upload successful:", uploadResult);
+      return uploadResult;
+    } catch (error) {
+      console.error("Media upload error:", error);
+      throw error;
+    }
   };
 
   // Helper to delete uploaded media from server

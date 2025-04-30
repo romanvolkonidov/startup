@@ -99,34 +99,18 @@ const ProfilePage: React.FC = () => {
     try {
       // Handle profile picture upload if changed
       let profilePictureUrl = profilePicture;
-      if (previewImage !== profilePicture && previewImage) {
+      
+      if (previewImage !== profilePicture && fileInputRef.current?.files?.[0]) {
         try {
           const formData = new FormData();
-          // Extract file from preview if it's a base64 string
-          if (previewImage.startsWith('data:')) {
-            const byteString = atob(previewImage.split(',')[1]);
-            const mimeString = previewImage.split(',')[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            
-            for (let i = 0; i < byteString.length; i++) {
-              ia[i] = byteString.charCodeAt(i);
-            }
-            
-            const blob = new Blob([ab], { type: mimeString });
-            const file = new File([blob], "profile-picture.jpg", { type: mimeString });
-            formData.append('profilePicture', file);
-          } else if (fileInputRef.current?.files?.[0]) {
-            // If there's a direct file from the input, use that
-            formData.append('profilePicture', fileInputRef.current.files[0]);
-          } else {
-            throw new Error('No valid profile picture found');
-          }
+          formData.append('profilePicture', fileInputRef.current.files[0]);
           
           console.log('Uploading profile picture...');
           const uploadResponse = await fetch('/api/upload/profile-picture', {
             method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { 
+              Authorization: `Bearer ${token}` 
+            },
             body: formData,
           });
           
@@ -162,13 +146,22 @@ const ProfilePage: React.FC = () => {
       });
       
       if (response.ok) {
+        const data = await response.json();
+        
+        // Update state with successful upload data
+        if (data.user && data.user.profilePicture) {
+          setProfilePicture(data.user.profilePicture);
+          setPreviewImage(data.user.profilePicture);
+        }
+        
         setSuccess('Profile updated successfully!');
-        setProfilePicture(previewImage);
         
         // Update context with new user data
-        const data = await response.json();
         if (data.user) {
-          setCurrentUser(data.user);
+          setCurrentUser({
+            ...currentUser, 
+            ...data.user
+          });
         }
         
         // Show notification
