@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EditJobModal from '../jobPost/EditJobModal';
 import { useJobContext } from '../../context/JobContext';
@@ -51,6 +51,7 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
   const { savedJobs, saveJob, fetchJobs } = useJobContext?.() || {};
   const { currentUser, token } = useAuthContext();
   const [saving, setSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [contacts, setContacts] = useState<any>(null);
   const [contactsError, setContactsError] = useState('');
   const navigate = useNavigate();
@@ -75,8 +76,6 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
     processedVideo: video
   });
   
-  // Determine if this job is saved by the current user
-  const isSaved = !!savedJobs?.some(j => j.id === job.id);
   // For save count, assume job.savedBy is an array of user IDs
   const saveCount = (job as any).savedBy?.length || 0;
   // Consistently use ownerId for ownership check, falling back to owner only if it's an ID
@@ -85,11 +84,32 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
     (job.owner && currentUser.id === job.owner)
   );
 
+  // Check if this job is saved whenever savedJobs changes
+  useEffect(() => {
+    if (savedJobs && currentUser) {
+      const isCurrentlySaved = savedJobs.some(j => j.id === job.id);
+      setIsSaved(isCurrentlySaved);
+    }
+  }, [savedJobs, job.id, currentUser]);
+
   const handleSave = async () => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      navigate('/login', { state: { from: `/jobs/${job.id}` } });
+      return;
+    }
+    
     setSaving(true);
-    await saveJob?.(job.id);
-    setSaving(false);
+    try {
+      const response = await saveJob?.(job.id);
+      // Update local state based on response
+      if (response?.success) {
+        setIsSaved(!!response.saved);
+      }
+    } catch (error) {
+      console.error("Error saving job:", error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleShowContacts = async () => {
