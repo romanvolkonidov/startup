@@ -89,6 +89,9 @@ const jobSchema = new mongoose.Schema({
   whatsapp: { type: String }, // new
   instagram: { type: String }, // new
   facebook: { type: String }, // new
+  image: { type: String },
+  video: { type: String },
+  savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] // Added savedBy array
 });
 const Job = mongoose.model('Job', jobSchema);
 

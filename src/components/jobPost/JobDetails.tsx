@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { jobService } from '../../services/jobService';
 import { useAuthContext } from '../../context/AuthContext';
+import { isValidObjectId } from '../../utils/validateForm';
 
 const JobDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,7 +30,14 @@ const JobDetails: React.FC = () => {
     const fetchJob = async () => {
       setLoading(true);
       setError('');
-      const res = await jobService.getJobById(id!);
+      
+      if (!id || !isValidObjectId(id)) {
+        setError('Invalid job ID');
+        setLoading(false);
+        return;
+      }
+      
+      const res = await jobService.getJobById(id);
       if (res && res.id) setJob(res);
       else setError(res.message || 'Job not found');
       setLoading(false);
@@ -42,6 +50,12 @@ const JobDetails: React.FC = () => {
       navigate('/login', { state: { from: `/jobs/${id}` } });
       return;
     }
+    
+    if (!id || !isValidObjectId(id)) {
+      setContactsError('Invalid job ID');
+      return;
+    }
+    
     setContactsError('');
     const res = await jobService.getJobContacts(id!, token);
     if (res && !res.success && res.message) {

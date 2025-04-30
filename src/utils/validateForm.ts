@@ -14,3 +14,15 @@ export function validateForm(fields: Record<string, any>): { valid: boolean; err
   });
   return { valid: Object.keys(errors).length === 0, errors };
 }
+
+/**
+ * Validates if a string is a valid MongoDB ObjectId
+ * @param id The string to validate
+ * @returns Boolean indicating if the string is a valid MongoDB ObjectId
+ */
+export const isValidObjectId = (id?: string): boolean => {
+  if (!id) return false;
+  
+  // MongoDB ObjectIds are 24-character hexadecimal strings
+  return /^[0-9a-fA-F]{24}$/.test(id);
+};
