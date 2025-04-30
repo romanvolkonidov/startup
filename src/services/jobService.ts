@@ -220,13 +220,11 @@ export const jobService = {
         return { success: false, message: 'Authentication required. Please log in again.' };
       }
       
-      // Try the standard API endpoint for user's own jobs
-      // Some backends use /jobs/my or /jobs?owner=me instead of /user/my-jobs
-      const res = await fetch(`${API_BASE_URL}/jobs/my`, {
+      // FIX: Use the correct backend endpoint for my jobs
+      const res = await fetch(`${API_BASE_URL}/user/my-jobs`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
-        // Add cache: 'no-store' to prevent caching issues
         cache: 'no-store'
       });
       
