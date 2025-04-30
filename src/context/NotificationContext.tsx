@@ -44,7 +44,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     setError('');
     if (!token || !currentUser) return { success: false, message: 'Not authenticated' };
     try {
-      const res = await fetch('http://localhost:5000/api/notifications', {
+      const res = await fetch('/api/notifications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

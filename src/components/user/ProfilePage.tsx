@@ -100,32 +100,46 @@ const ProfilePage: React.FC = () => {
       // Handle profile picture upload if changed
       let profilePictureUrl = profilePicture;
       if (previewImage !== profilePicture && previewImage) {
-        const formData = new FormData();
-        // If previewImage is a base64 string, convert to file
-        const byteString = atob(previewImage.split(',')[1]);
-        const mimeString = previewImage.split(',')[0].split(':')[1].split(';')[0];
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
-        
-        for (let i = 0; i < byteString.length; i++) {
-          ia[i] = byteString.charCodeAt(i);
-        }
-        
-        const blob = new Blob([ab], { type: mimeString });
-        const file = new File([blob], "profile-picture.jpg", { type: mimeString });
-        
-        formData.append('profilePicture', file);
-        
-        const uploadResponse = await fetch('/api/upload/profile-picture', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-        
-        if (uploadResponse.ok) {
-          const uploadData = await uploadResponse.json();
-          profilePictureUrl = uploadData.url;
-        } else {
+        try {
+          const formData = new FormData();
+          // Extract file from preview if it's a base64 string
+          if (previewImage.startsWith('data:')) {
+            const byteString = atob(previewImage.split(',')[1]);
+            const mimeString = previewImage.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            
+            const blob = new Blob([ab], { type: mimeString });
+            const file = new File([blob], "profile-picture.jpg", { type: mimeString });
+            formData.append('profilePicture', file);
+          } else if (fileInputRef.current?.files?.[0]) {
+            // If there's a direct file from the input, use that
+            formData.append('profilePicture', fileInputRef.current.files[0]);
+          } else {
+            throw new Error('No valid profile picture found');
+          }
+          
+          console.log('Uploading profile picture...');
+          const uploadResponse = await fetch('/api/upload/profile-picture', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+          });
+          
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json();
+            profilePictureUrl = uploadData.url;
+            console.log('Profile picture uploaded successfully:', profilePictureUrl);
+          } else {
+            console.error('Upload response error:', await uploadResponse.text());
+            throw new Error('Failed to upload profile picture');
+          }
+        } catch (uploadErr) {
+          console.error('Profile picture upload error:', uploadErr);
           throw new Error('Failed to upload profile picture');
         }
       }
