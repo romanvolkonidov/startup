@@ -53,7 +53,7 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
   const fetchJobs = async () => {
     setLoading(true);
     setError('');
-    const res = await jobService.getJobs();
+    const res = await jobService.getJobs(token || undefined);
     if (Array.isArray(res)) setJobs(res);
     else setError(res.message || 'Failed to fetch jobs');
     setLoading(false);
@@ -107,7 +107,7 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteMyJob = async (jobId: string) => {
     if (!token) return { success: false, message: 'Not authenticated' };
-    const res = await jobService.deleteJob(jobId);
+    const res = await jobService.deleteJob(jobId, token);
     if (res.success) {
       // Remove from myJobs list
       setMyJobs(prev => prev.filter(job => job.id !== jobId));

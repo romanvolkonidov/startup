@@ -107,6 +107,32 @@ export const authService = {
       console.error('Apple sign-in error:', error);
       return { success: false, message: getFirebaseErrorMessage(error) };
     }
+  },
+  refreshToken: async (token: string) => {
+    try {
+      console.log('Calling token refresh API endpoint');
+      const res = await fetch(`${API_URL}/auth/refresh-token`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        }
+      });
+      
+      if (!res.ok) {
+        console.error(`Token refresh failed with status: ${res.status}`);
+        const errorText = await res.text().catch(() => '');
+        console.error('Error response:', errorText);
+        return { success: false, message: 'Failed to refresh token' };
+      }
+      
+      const data = await res.json();
+      console.log('Token refresh successful');
+      return { success: true, token: data.token };
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      return { success: false, message: 'Failed to refresh authentication token' };
+    }
   }
 };
 
