@@ -234,6 +234,26 @@ export const JobProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Define the deleteMyJob function
+  const deleteMyJob = async (jobId: string) => {
+    if (!token) return { success: false, message: 'Not authenticated' };
+    try {
+      const res = await jobService.deleteJob(jobId, token);
+      if (res.success) {
+        // Remove from myJobs list
+        setMyJobs(prev => prev.filter(job => job.id !== jobId));
+        // Remove from main jobs list if present
+        setJobs(prev => prev.filter(job => job.id !== jobId));
+        // Remove from savedJobs list if present
+        setSavedJobs(prev => prev.filter(job => job.id !== jobId));
+      }
+      return res;
+    } catch (error) {
+      console.error('Error deleting job in context:', error);
+      return { success: false, message: (error as Error).message || 'Failed to delete job' };
+    }
+  };
+
   useEffect(() => {
     fetchJobs();
     if (token) {
