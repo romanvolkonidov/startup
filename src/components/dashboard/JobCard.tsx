@@ -103,6 +103,14 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
     setContactsVisible(true);
     
     try {
+      // Make sure we have a valid job ID before making the API call
+      if (!job.id || job.id === 'undefined') {
+        console.error('Invalid job ID for contact fetch:', job.id);
+        setContactsError('Cannot retrieve contact information: Invalid job ID');
+        return;
+      }
+
+      console.log('Fetching contacts for job ID:', job.id);
       // Use jobService instead of direct fetch for correct API URL handling
       const response = await jobService.getJobContacts(job.id, token);
       
@@ -112,6 +120,7 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
         setContacts(response);
       }
     } catch (err) {
+      console.error('Error fetching job contacts:', err);
       setContactsError('An error occurred. Please try again.');
     }
   };

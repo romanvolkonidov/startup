@@ -249,6 +249,12 @@ export const jobService = {
         console.error('No authentication token available');
         return { success: false, message: 'Authentication required. Please log in again.' };
       }
+
+      // Improved validation of job ID
+      if (!id || id === 'undefined' || typeof id !== 'string') {
+        console.error('Invalid job ID:', id);
+        return { success: false, message: 'Invalid job ID provided' };
+      }
       
       const res = await fetch(`${API_BASE_URL}/jobs/${id}/contacts`, {
         headers: { Authorization: `Bearer ${token}` }
