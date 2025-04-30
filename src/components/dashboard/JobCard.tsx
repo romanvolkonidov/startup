@@ -103,9 +103,10 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
     setContactsVisible(true);
     
     try {
-      // Make sure we have a valid job ID before making the API call
-      if (!job.id || job.id === 'undefined') {
-        console.error('Invalid job ID for contact fetch:', job.id);
+      // Enhanced validation to ensure we have a valid MongoDB ObjectId format
+      // MongoDB ObjectId is a 24-character hex string
+      if (!job.id || typeof job.id !== 'string' || job.id === 'undefined' || !/^[0-9a-fA-F]{24}$/.test(job.id)) {
+        console.error('Invalid job ID format for contact fetch:', job.id);
         setContactsError('Cannot retrieve contact information: Invalid job ID');
         return;
       }

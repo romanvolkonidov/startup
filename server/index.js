@@ -89,19 +89,20 @@ const User = mongoose.model('User', userSchema);
 const jobSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
-  owner: { type: String, required: true },
+  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Reference to the user who posted the job
+  owner: { type: String, required: true }, // Owner display name (for backward compatibility)
   postedAt: { type: String, required: true },
   amount: { type: Number, required: true },
   returnPercent: { type: Number, required: true },
   paybackTime: { type: String, required: true },
-  email: { type: String }, // new
-  phone: { type: String }, // new
-  whatsapp: { type: String }, // new
-  instagram: { type: String }, // new
-  facebook: { type: String }, // new
+  email: { type: String }, // Contact information
+  phone: { type: String },
+  whatsapp: { type: String },
+  instagram: { type: String },
+  facebook: { type: String },
   image: { type: String },
   video: { type: String },
-  savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] // Added savedBy array
+  savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', default: [] }] // Array of user IDs who saved this job
 });
 const Job = mongoose.model('Job', jobSchema);
 
@@ -346,25 +347,40 @@ app.get('/api/jobs', async (req, res) => {
 
 // 2. Create a new job (authenticated only)
 app.post('/api/jobs', authenticateToken, async (req, res) => {
-  const { title, description, owner, amount, returnPercent, paybackTime, email, phone, whatsapp, instagram, facebook, image, video } = req.body;
-  const newJob = new Job({
-    title,
-    description,
-    owner,
-    postedAt: new Date().toISOString().slice(0, 10),
-    amount,
-    returnPercent,
-    paybackTime,
-    email,
-    phone,
-    whatsapp,
-    instagram,
-    facebook,
-    image,
-    video
-  });
-  await newJob.save();
-  res.json({ success: true, job: newJob });
+  try {
+    const userId = req.user.id; // Get user ID from the token
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    const { title, description, amount, returnPercent, paybackTime, email, phone, whatsapp, instagram, facebook, image, video } = req.body;
+    
+    const newJob = new Job({
+      title,
+      description,
+      ownerId: userId, // Set the ownerId to the current user's ID
+      owner: user.name, // Set the owner name for display purposes
+      postedAt: new Date().toISOString().slice(0, 10),
+      amount,
+      returnPercent,
+      paybackTime,
+      email: email || user.email, // Fallback to user's email if not provided
+      phone: phone || user.phone, // Fallback to user's phone if not provided
+      whatsapp,
+      instagram,
+      facebook,
+      image,
+      video,
+      savedBy: [] // Initialize with empty array
+    });
+    
+    await newJob.save();
+    res.json({ success: true, job: newJob });
+  } catch (err) {
+    console.error('Error creating job:', err);
+    res.status(500).json({ success: false, message: 'Failed to create job' });
+  }
 });
 
 // 3. Get user's saved jobs - moved to user routes section to avoid conflicts
@@ -559,8 +575,8 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
   }
 });
 
-// Get public user profile by ID
-app.get('/api/users/:id', authenticateToken, async (req, res) => {
+// Get public user profile by ID - fixed path to match frontend (/user/:id, not /users/:id)
+app.get('/api/user/:id', authenticateToken, async (req, res) => {
   try {
     const userId = req.params.id;
     
@@ -596,6 +612,22 @@ app.get('/api/users/:id', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error fetching user profile:', err);
     res.status(500).json({ success: false, message: 'Failed to fetch user profile' });
+  }
+});
+
+// Get the logged-in user's posted jobs
+app.get('/api/user/my-jobs', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Use the ownerId field to find jobs by this user
+    const jobs = await Job.find({ ownerId: userId });
+    const enrichedJobs = await enrichJobsWithOwnerInfo(jobs, true);
+    
+    res.json(enrichedJobs);
+  } catch (err) {
+    console.error('Error fetching user jobs:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch your jobs' });
   }
 });
 

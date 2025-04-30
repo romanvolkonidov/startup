@@ -250,9 +250,9 @@ export const jobService = {
         return { success: false, message: 'Authentication required. Please log in again.' };
       }
 
-      // Improved validation of job ID
-      if (!id || id === 'undefined' || typeof id !== 'string') {
-        console.error('Invalid job ID:', id);
+      // Comprehensive validation to ensure we have a valid MongoDB ObjectId format
+      if (!id || typeof id !== 'string' || id === 'undefined' || !/^[0-9a-fA-F]{24}$/.test(id)) {
+        console.error('Invalid job ID format:', id);
         return { success: false, message: 'Invalid job ID provided' };
       }
       
