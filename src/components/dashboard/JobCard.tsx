@@ -51,7 +51,7 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
   const { savedJobs, saveJob, fetchJobs } = useJobContext?.() || {};
   const { currentUser, token } = useAuthContext();
   const [saving, setSaving] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(false); // Local state for immediate UI feedback
   const [contacts, setContacts] = useState<any>(null);
   const [contactsError, setContactsError] = useState('');
   const navigate = useNavigate();
@@ -84,29 +84,43 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
     (job.owner && currentUser.id === job.owner)
   );
 
-  // Check if this job is saved whenever savedJobs changes
+  // Check if this job is saved whenever the job data (specifically savedBy) or user changes
   useEffect(() => {
-    if (savedJobs && currentUser) {
-      const isCurrentlySaved = savedJobs.some(j => j.id === job.id);
+    if (currentUser && job.savedBy) {
+      const isCurrentlySaved = job.savedBy.includes(currentUser.id);
+      // console.log(`[JobCard ${job.id}] useEffect: job.savedBy changed. isCurrentlySaved: ${isCurrentlySaved}`);
       setIsSaved(isCurrentlySaved);
+    } else {
+      setIsSaved(false); // Not saved if no user or no savedBy array
     }
-  }, [savedJobs, job.id, currentUser]);
+  }, [job.savedBy, currentUser, job.id]); // Depend on job.savedBy and currentUser
 
   const handleSave = async () => {
     if (!currentUser) {
       navigate('/login', { state: { from: `/jobs/${job.id}` } });
       return;
     }
+    if (!saveJob) {
+      console.error('saveJob function not available from context');
+      return; 
+    }
     
     setSaving(true);
+    // Optimistic update is now handled entirely within JobContext
+    // No need to call setIsSaved here
+    console.log(`[JobCard ${job.id}] Calling context saveJob...`);
+
     try {
-      const response = await saveJob?.(job.id);
-      // Update local state based on response
-      if (response?.success) {
-        setIsSaved(!!response.saved);
+      const response = await saveJob(job.id);
+      console.log(`[JobCard ${job.id}] Context saveJob response:`, response);
+      // The useEffect hook above will react to the change in job.savedBy from the context
+      if (!response?.success) {
+        console.error(`[JobCard ${job.id}] Failed to save job via context:`, response?.message);
+        // Revert is handled by context
       }
     } catch (error) {
-      console.error("Error saving job:", error);
+      console.error(`[JobCard ${job.id}] Error calling context saveJob:`, error);
+      // Revert is handled by context
     } finally {
       setSaving(false);
     }
