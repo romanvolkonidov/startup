@@ -104,23 +104,17 @@ const JobCard: React.FC<JobCardProps> = React.memo(({
       console.error('saveJob function not available from context');
       return; 
     }
-    
+
     setSaving(true);
-    // Optimistic update is now handled entirely within JobContext
-    // No need to call setIsSaved here
-    console.log(`[JobCard ${job.id}] Calling context saveJob...`);
 
     try {
       const response = await saveJob(job.id);
       console.log(`[JobCard ${job.id}] Context saveJob response:`, response);
-      // The useEffect hook above will react to the change in job.savedBy from the context
       if (!response?.success) {
         console.error(`[JobCard ${job.id}] Failed to save job via context:`, response?.message);
-        // Revert is handled by context
       }
     } catch (error) {
       console.error(`[JobCard ${job.id}] Error calling context saveJob:`, error);
-      // Revert is handled by context
     } finally {
       setSaving(false);
     }
